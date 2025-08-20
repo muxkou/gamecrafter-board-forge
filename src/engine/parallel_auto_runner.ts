@@ -53,6 +53,7 @@ export async function parallel_auto_runner(opts: ParallelAutoRunnerOptions): Pro
     violations: 0,
     action_hits: {},
     branch_hits: {},
+    episode_steps: [],
   } as AutoRunnerSummary;
   const trajectories: Event[][] = [];
   for (const r of results) {
@@ -63,6 +64,7 @@ export async function parallel_auto_runner(opts: ParallelAutoRunnerOptions): Pro
     summary.losses += r.losses;
     summary.no_action += r.no_action;
     summary.violations += r.violations;
+    summary.episode_steps.push(...r.episode_steps);
     for (const [k, v] of Object.entries(r.action_hits)) {
       summary.action_hits[k] = (summary.action_hits[k] || 0) + v;
     }
