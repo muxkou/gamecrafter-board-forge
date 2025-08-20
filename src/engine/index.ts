@@ -113,9 +113,9 @@ export async function initial_state(input: InitialStateInput): Promise<InitialSt
   // 计算初始状态哈希：用于一致性校验与回放锚点
   /**
    * TODO: - 当前用 Date.now() 写入 meta.created_at，且参与 state_hash。这与注释“纯函数/只受入参决定”以及“所有随机只来自 seed”冲突。
-   * 考虑在 hash 计算时 去掉 create_at
-   * canonical_stringify({ ...game_state, create_at: undefined })
-   */
+ * 考虑在 hash 计算时 去掉 created_at
+ * canonical_stringify({ ...game_state, created_at: undefined })
+ */
   const state_hash = hash_sha256(canonical_stringify(game_state));
 
   return { game_state, init_events, state_hash };
