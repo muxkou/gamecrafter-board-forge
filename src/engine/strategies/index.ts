@@ -1,2 +1,2 @@
-export { firstStrategy } from './first-strategy';
-export { randomStrategy } from './random-strategy';
+export { first_strategy } from './first-strategy';
+export { random_strategy } from './random-strategy';

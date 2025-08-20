@@ -217,4 +217,4 @@ export async function step(input: StepInput): Promise<StepOutput> {
 }
 
 export type { Strategy, StrategyContext } from './strategy';
-export { firstStrategy, randomStrategy } from './strategies';
+export { first_strategy, random_strategy } from './strategies';

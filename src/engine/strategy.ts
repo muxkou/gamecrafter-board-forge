@@ -7,5 +7,5 @@ export interface StrategyContext {
 }
 
 export interface Strategy {
-  choose(actionCalls: ActionCall[], ctx: StrategyContext): ActionCall | null;
+  choose(action_calls: ActionCall[], ctx: StrategyContext): ActionCall | null;
 }

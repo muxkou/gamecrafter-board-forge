@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { compile } from '../compiler/index';
 import { initial_state } from './index';
 import { legal_actions_compiled } from './legal_actions_compiled';
-import { firstStrategy, randomStrategy } from './strategies';
+import { first_strategy, random_strategy } from './strategies';
 import type { Strategy } from './strategy';
 
 function buildDSL() {
@@ -27,7 +27,7 @@ function buildDSL() {
 }
 
 describe('built-in strategies', () => {
-  it('firstStrategy picks the first legal action', async () => {
+  it('first_strategy picks the first legal action', async () => {
     const compiled = await compile({ dsl: buildDSL() });
     expect(compiled.ok).toBe(true);
     const init = await initial_state({ compiled_spec: compiled.compiled_spec!, seats: ['A'], seed: 1 });
@@ -35,20 +35,20 @@ describe('built-in strategies', () => {
     gs.zones.deck.instances['A'].items = ['c1'];
     const calls = legal_actions_compiled({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats: ['A'] });
     expect(calls.length).toBe(2);
-    const strat: Strategy = firstStrategy;
+    const strat: Strategy = first_strategy;
     const chosen = strat.choose(calls, { seat: 'A', state: gs });
     expect(chosen).toEqual(calls[0]);
   });
 
-  it('randomStrategy returns one of the legal actions or null on empty input', async () => {
+  it('random_strategy returns one of the legal actions or null on empty input', async () => {
     const compiled = await compile({ dsl: buildDSL() });
     const init = await initial_state({ compiled_spec: compiled.compiled_spec!, seats: ['A'], seed: 1 });
     const gs: any = init.game_state;
     gs.zones.deck.instances['A'].items = ['c1'];
     const calls = legal_actions_compiled({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats: ['A'] });
-    const chosen = randomStrategy.choose(calls, { seat: 'A', state: gs });
+    const chosen = random_strategy.choose(calls, { seat: 'A', state: gs });
     expect(calls.includes(chosen!)).toBe(true);
-    expect(randomStrategy.choose([], { seat: 'A', state: gs })).toBeNull();
-    expect(firstStrategy.choose([], { seat: 'A', state: gs })).toBeNull();
+    expect(random_strategy.choose([], { seat: 'A', state: gs })).toBeNull();
+    expect(first_strategy.choose([], { seat: 'A', state: gs })).toBeNull();
   });
 });
