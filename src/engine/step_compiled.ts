@@ -1,5 +1,5 @@
 // 假设公共类型都在 @bge/rc-types
-import type { GameState } from '../types';
+import type { GameState, ReduceContext } from '../types';
 import { CompiledSpecType } from '../schema';
 import { validate_state } from './validate';
 import { effectExecutors, type EffectOp } from './effects';
@@ -19,8 +19,9 @@ export function step_compiled(args: {
   compiled_spec: CompiledSpecType;
   game_state: GameState;
   action: CompiledActionCall;
+  context?: ReduceContext;
 }): { next_state: GameState; action_hash: string } {
-  const { compiled_spec, game_state, action } = args;
+  const { compiled_spec, game_state, action, context } = args;
 
   // 取动作定义
   const def = (compiled_spec as any).actions_index?.[action.action] as CompiledActionDef | undefined;
@@ -34,7 +35,7 @@ export function step_compiled(args: {
 
   // 逐条执行（纯函数，不就地修改）
   let state = game_state;
-  const ctx: InterpreterCtx = { compiled: compiled_spec, state, call: action };
+  const ctx: InterpreterCtx = { compiled: compiled_spec, state, call: action, context };
 
   for (const op of pipeline) {
     const exec = EXECUTORS[op.op as EffectOp['op']];

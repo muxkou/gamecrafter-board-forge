@@ -23,19 +23,26 @@ export interface StepInput {
   compiled_spec?: CompiledSpecType;
 }
 
+/**
+ * 运行期限额（防滥用与 DoS 防护）。
+ *
+ * 默认值来自 compiled_spec.eval_limits，调用者可通过 context.eval_limits 覆写。
+ */
+export interface EvalLimits {
+  /** 表达式求值节点上限（越界报 EVAL_LIMIT_EXCEEDED）。 */
+  max_expr_nodes?: number;
+  /** 每次 reduce 内 RNG 调用次数上限。 */
+  max_rng_calls_per_reduce?: number;
+  /** for_each 等遍历的迭代上限。 */
+  max_for_each_iter?: number;
+  /** 单步执行超时（毫秒）。 */
+  step_timeout_ms?: number;
+}
+
 /** 执行上下文（非规则的一部分，属于引擎运行策略） */
 export interface ReduceContext {
   /** 执行期限额（用于防滥用与 DoS 防护）。 */
-  eval_limits?: {
-    /** 表达式求值节点上限（越界报 EVAL_LIMIT_EXCEEDED）。 */
-    max_expr_nodes?: number;
-    /** 每次 reduce 内 RNG 调用次数上限。 */
-    max_rng_calls_per_reduce?: number;
-    /** for_each 等遍历的迭代上限。 */
-    max_for_each_iter?: number;
-    /** 单步执行超时（毫秒）。 */
-    step_timeout_ms?: number;
-  };
+  eval_limits?: EvalLimits;
   /**
    * 若为 true，引擎可回传额外遥测（例如命中分支、管线耗时等）。
    * 仅用于调试/分析；不应影响语义结果。

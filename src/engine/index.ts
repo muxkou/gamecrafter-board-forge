@@ -1,5 +1,5 @@
 import { CompiledSpecType } from "../schema";
-import { StepInput, StepOutput, EngineError, Event, GameState, InitialStateInput, InitialStateOutput } from "../types";
+import { StepInput, StepOutput, EngineError, Event, GameState, InitialStateInput, InitialStateOutput, ReduceContext } from "../types";
 import { canonical_stringify, hash_sha256 } from "../utils/canonical.util";
 import { mulberry32 } from "../utils/rng.util";
 import { end_turn, move_top } from "./actions";
@@ -127,7 +127,7 @@ function err(code: string, message: string, details?: unknown): EngineError {
 }
 
 export async function step(input: StepInput): Promise<StepOutput> {
-  const { game_state, action, compiled_spec } = input;
+  const { game_state, action, compiled_spec, context } = input;
 
   // 校验 1：动作序号必须严格递增
   /**
@@ -160,10 +160,15 @@ export async function step(input: StepInput): Promise<StepOutput> {
   // 优先：若提供 compiled_spec，走解释器路径
   if (compiled_spec) {
     try {
+      const ctx: ReduceContext | undefined =
+        compiled_spec.eval_limits || context?.eval_limits
+          ? { ...context, eval_limits: { ...compiled_spec.eval_limits, ...context?.eval_limits } }
+          : context;
       const { next_state } = step_compiled({
         compiled_spec,
         game_state,
         action: { action: action.id, by: action.by, payload: (action as any).payload ?? {} },
+        context: ctx,
       } as any);
       next = { ...next_state, meta: { ...next_state.meta, last_seq: action.seq } };
     } catch (e: any) {

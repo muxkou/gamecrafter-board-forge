@@ -1,4 +1,4 @@
-import type { GameState } from '../../types';
+import type { GameState, ReduceContext } from '../../types';
 import type { CompiledSpecType } from '../../schema';
 
 export type CompiledActionCall = {
@@ -11,6 +11,7 @@ export type InterpreterCtx = {
   compiled: CompiledSpecType;
   state: GameState;
   call: CompiledActionCall;
+  context?: ReduceContext;
 };
 
 export type EffectExecutor<T> = (op: T, ctx: InterpreterCtx) => GameState;
