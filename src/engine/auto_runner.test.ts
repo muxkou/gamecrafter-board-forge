@@ -26,6 +26,7 @@ describe('auto_runner victory handling', () => {
     expect(summary.wins).toBe(1);
     expect(summary.losses).toBe(0);
     expect(summary.ties).toBe(0);
+    expect(summary.no_actions).toBe(0);
   });
 
   it('counts losses', async () => {
@@ -36,6 +37,7 @@ describe('auto_runner victory handling', () => {
     expect(summary.losses).toBe(1);
     expect(summary.wins).toBe(0);
     expect(summary.ties).toBe(0);
+    expect(summary.no_actions).toBe(0);
   });
 
   it('counts ties when no victory', async () => {
@@ -57,6 +59,6 @@ describe('auto_runner victory handling', () => {
     expect(summary.ties).toBe(1);
     expect(summary.wins).toBe(0);
     expect(summary.losses).toBe(0);
+    expect(summary.no_actions).toBe(1);
   });
 });
-
