@@ -1,3 +1,8 @@
+/**
+ * 自动对局运行器（Auto Runner）
+ * 在给定规则与策略下批量模拟对局，产出胜负/平局、步数、
+ * 无法行动次数、策略违规次数、命中统计与可选事件轨迹等。
+ */
 import { initial_state, step } from './index';
 import type { CompiledSpecType } from '../schema';
 import type { GameState, Event } from '../types';
@@ -5,17 +10,25 @@ import { legal_actions_compiled } from './legal_actions_compiled';
 import type { Strategy } from './strategy';
 import { first_strategy } from './strategies';
 
+/**
+ * 自动运行器的配置项
+ * - strategies 支持数组或映射形式，均提供 `first_strategy` 作为兜底
+ */
 export interface AutoRunnerOptions {
   compiled_spec: CompiledSpecType;
   seats: string[];
   episodes: number;
   /** limit of steps per episode (default 100) */
   max_steps?: number;
+  /** 策略配置：数组按 `seats` 顺序映射，映射按席位名映射，缺省回退到默认策略 */
   strategies?: Record<string, Strategy> | Strategy[];
   /** when true, collect event trajectory for each episode */
   collect_trajectory?: boolean;
 }
 
+/**
+ * 自动运行摘要结果
+ */
 export interface AutoRunnerSummary {
   episodes: number;
   steps: number;
@@ -36,9 +49,14 @@ export interface AutoRunnerSummary {
   trajectories?: Event[][];
 }
 
+/**
+ * 评估胜负：按 `compiled_spec.victory.order` 顺序判定，
+ * 命中则返回对应结果并记录分支；否则返回 'ongoing'。
+ */
 function eval_victory(compiled_spec: CompiledSpecType, state: GameState, hit?: (key: string) => void): string {
   const chain = compiled_spec.victory?.order || [];
   for (const { when, result } of chain) {
+    // DSL 可能将条件编译为 { const: boolean }
     const cond = typeof when === 'object' && when !== null && 'const' in (when as any)
       ? (when as any).const
       : when;
@@ -51,6 +69,11 @@ function eval_victory(compiled_spec: CompiledSpecType, state: GameState, hit?: (
   return 'ongoing';
 }
 
+/**
+ * 为指定席位选择策略：
+ * - 数组：按 `seats` 的索引对应；越界回退到默认策略
+ * - 映射：按席位名取；缺失回退到默认策略
+ */
 function get_strategry(strategies: AutoRunnerOptions['strategies'], seat: string, seats: string[]): Strategy {
   if (Array.isArray(strategies)) {
     const idx = seats.indexOf(seat);
@@ -69,15 +92,18 @@ function get_strategry(strategies: AutoRunnerOptions['strategies'], seat: string
  */
 export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSummary> {
   const { compiled_spec, seats, episodes, max_steps = 100, strategies, collect_trajectory } = opts;
+  // 全局统计
   let wins = 0;
   let losses = 0;
   let ties = 0;
   let steps = 0;
   let no_action = 0;
   let violations = 0;
+  // 行动/分支命中统计
   const action_hits: Record<string, number> = {};
   const branch_hits: Record<string, number> = {};
 
+  // 命中记录器
   const hitAction = (id: string) => {
     action_hits[id] = (action_hits[id] || 0) + 1;
   };
@@ -85,11 +111,14 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
     branch_hits[key] = (branch_hits[key] || 0) + 1;
   };
 
+  // 轨迹与每局步数
   const trajectories: Event[][] = [];
   const episode_steps: number[] = [];
   for (let ep = 0; ep < episodes; ep++) {
+    // 每局初始化（使用 ep 作为随机种子，便于复现）
     const init = await initial_state({ compiled_spec, seats, seed: ep });
     let state = init.game_state;
+    // 开局先判定是否已处于终局
     let result = eval_victory(compiled_spec, state, hitBranch);
     if (result === 'win') { wins++; episode_steps.push(0); continue; }
     if (result === 'loss') { losses++; episode_steps.push(0); continue; }
@@ -100,37 +129,49 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
     let ep_steps = 0;
     for (let i = 0; i < max_steps; i++) {
       const seat = state.active_seat || '';
+      // 1) 列举当前席位的所有合法行动
       const calls = legal_actions_compiled({ compiled_spec: compiled_spec as any, game_state: state, by: seat, seats });
+      // 无合法行动：记平局与 no_action，结束该局
       if (calls.length === 0) { ties++; no_action++; break; }
+      // 2) 选择策略
       const strat = get_strategry(strategies, seat, seats);
       let next;
       try {
+        // 3) 使用策略基于候选行动与当前状态进行决策
         next = strat.choose(calls, { seat, state });
       } catch (e) {
+        // 策略抛错：计入 violations 并终止该局
         violations++;
         break;
       }
+      // 策略放弃（null/undefined）：记平局与 no_action，结束该局
       if (!next) { ties++; no_action++; break; }
 
+      // 4) 组装动作并推进状态机
       const action = { id: next.action, by: next.by, payload: next.payload || {}, seq: state.meta.last_seq + 1 };
       const r = await step({ compiled_spec, game_state: state, action });
       
+      // 执行失败或无后继状态：保守记为平局
       if (!r.ok || !r.next_state) { 
         ties++; 
         break; 
       }
 
+      // 5) 记录命中与步数推进
       hitAction(action.id);
       state = r.next_state;
       steps++;
       ep_steps++;
+      // 可选：记录事件轨迹
       if (collect_trajectory && r.event) events.push(r.event);
+      // 6) 每步后检查是否达成终局
       result = eval_victory(compiled_spec, state, hitBranch);
 
       if (result === 'win') { wins++; break; }
       if (result === 'loss') { losses++; break; }
       if (result === 'tie') { ties++; break; }
     }
+    // 达到最大步数仍未结束：判为平局
     if (result === 'ongoing' && ep_steps >= max_steps) { ties++; }
     episode_steps.push(ep_steps);
   }
