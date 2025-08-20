@@ -29,6 +29,7 @@ describe('auto_runner victory handling', () => {
     expect(summary.no_action).toBe(0);
     expect(summary.violations).toBe(0);
     expect(summary.branch_hits.win).toBe(1);
+    expect(summary.episode_steps[0]).toBe(0);
   });
 
   it('counts losses', async () => {
@@ -42,6 +43,7 @@ describe('auto_runner victory handling', () => {
     expect(summary.no_action).toBe(0);
     expect(summary.violations).toBe(0);
     expect(summary.branch_hits.loss).toBe(1);
+    expect(summary.episode_steps[0]).toBe(0);
   });
 
   it('counts ties when no victory', async () => {
@@ -66,5 +68,6 @@ describe('auto_runner victory handling', () => {
     expect(summary.no_action).toBe(1);
     expect(summary.violations).toBe(0);
     expect(summary.branch_hits.ongoing).toBe(1);
+    expect(summary.episode_steps[0]).toBe(0);
   });
 });

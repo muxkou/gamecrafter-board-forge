@@ -9,6 +9,7 @@ export interface AutoRunnerOptions {
   compiled_spec: CompiledSpecType;
   seats: string[];
   episodes: number;
+  /** limit of steps per episode (default 100) */
   max_steps?: number;
   strategies?: Record<string, Strategy> | Strategy[];
   /** when true, collect event trajectory for each episode */
@@ -29,6 +30,8 @@ export interface AutoRunnerSummary {
   action_hits: Record<string, number>;
   /** count of hit branches (e.g. victory conditions) */
   branch_hits: Record<string, number>;
+  /** actual step count for each episode */
+  episode_steps: number[];
   /** optional trajectory of events for each episode */
   trajectories?: Event[][];
 }
@@ -83,16 +86,18 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
   };
 
   const trajectories: Event[][] = [];
+  const episode_steps: number[] = [];
   for (let ep = 0; ep < episodes; ep++) {
     const init = await initial_state({ compiled_spec, seats, seed: ep });
     let state = init.game_state;
     let result = eval_victory(compiled_spec, state, hitBranch);
-    if (result === 'win') { wins++; continue; }
-    if (result === 'loss') { losses++; continue; }
-    if (result === 'tie') { ties++; continue; }
+    if (result === 'win') { wins++; episode_steps.push(0); continue; }
+    if (result === 'loss') { losses++; episode_steps.push(0); continue; }
+    if (result === 'tie') { ties++; episode_steps.push(0); continue; }
     const events: Event[] = [];
     if (collect_trajectory) trajectories.push(events);
 
+    let ep_steps = 0;
     for (let i = 0; i < max_steps; i++) {
       const seat = state.active_seat || '';
       const calls = legal_actions_compiled({ compiled_spec: compiled_spec as any, game_state: state, by: seat, seats });
@@ -118,15 +123,17 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
       hitAction(action.id);
       state = r.next_state;
       steps++;
+      ep_steps++;
       if (collect_trajectory && r.event) events.push(r.event);
       result = eval_victory(compiled_spec, state, hitBranch);
 
       if (result === 'win') { wins++; break; }
       if (result === 'loss') { losses++; break; }
       if (result === 'tie') { ties++; break; }
-      if (i === max_steps - 1) ties++;
     }
+    if (result === 'ongoing' && ep_steps >= max_steps) { ties++; }
+    episode_steps.push(ep_steps);
   }
 
-  return { episodes, steps, ties, wins, losses, no_action, violations, action_hits, branch_hits, trajectories: collect_trajectory ? trajectories : undefined };
+  return { episodes, steps, ties, wins, losses, no_action, violations, action_hits, branch_hits, episode_steps, trajectories: collect_trajectory ? trajectories : undefined };
 }
