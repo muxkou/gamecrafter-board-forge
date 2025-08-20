@@ -27,7 +27,7 @@ const DSL_Metadata_Seats = z.object({
 /**
  * 实体类型定义 （只描述结构，不含实例数据）
  */
-const DSL_Antity = z.object({
+const DSL_Entity = z.object({
   /** 实体类型 ID（唯一） */
   id: z.string(),
   /** 属性字典（此处放宽为 any；后续 compiler 可细化类型系统） */
@@ -178,7 +178,7 @@ export const DSL_Base = z.object({
 
   /** 实体类型定义列表（只描述结构，不含实例数据） */
   entities: z.array(
-    DSL_Antity
+    DSL_Entity
   ),
 
   /** 区域（zone）定义列表：牌库、手牌、场面等 */
