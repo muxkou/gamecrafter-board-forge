@@ -32,6 +32,8 @@ describe('auto_runner strategy behaviors', () => {
     expect(summary.no_action).toBe(1);
     expect(summary.ties).toBe(1);
     expect(summary.violations).toBe(0);
+    expect(summary.branch_hits.ongoing).toBe(1);
+    expect(summary.action_hits.noop).toBeUndefined();
   });
 
   it('records violations when strategy throws', async () => {
@@ -42,5 +44,7 @@ describe('auto_runner strategy behaviors', () => {
     expect(summary.violations).toBe(1);
     expect(summary.no_action).toBe(0);
     expect(summary.ties).toBe(0);
+    expect(summary.branch_hits.ongoing).toBe(1);
+    expect(summary.action_hits.noop).toBeUndefined();
   });
 });

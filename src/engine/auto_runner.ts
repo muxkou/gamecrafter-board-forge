@@ -23,16 +23,24 @@ export interface AutoRunnerSummary {
   no_action: number;
   /** episodes terminated due to strategy throwing an exception */
   violations: number;
+  /** count of executed actions */
+  action_hits: Record<string, number>;
+  /** count of hit branches (e.g. victory conditions) */
+  branch_hits: Record<string, number>;
 }
 
-function eval_victory(compiled_spec: CompiledSpecType, state: GameState): string {
+function eval_victory(compiled_spec: CompiledSpecType, state: GameState, hit?: (key: string) => void): string {
   const chain = compiled_spec.victory?.order || [];
   for (const { when, result } of chain) {
     const cond = typeof when === 'object' && when !== null && 'const' in (when as any)
       ? (when as any).const
       : when;
-    if (cond) return result;
+    if (cond) {
+      hit?.(String(result));
+      return result;
+    }
   }
+  hit?.('ongoing');
   return 'ongoing';
 }
 
@@ -60,11 +68,20 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
   let steps = 0;
   let no_action = 0;
   let violations = 0;
+  const action_hits: Record<string, number> = {};
+  const branch_hits: Record<string, number> = {};
+
+  const hitAction = (id: string) => {
+    action_hits[id] = (action_hits[id] || 0) + 1;
+  };
+  const hitBranch = (key: string) => {
+    branch_hits[key] = (branch_hits[key] || 0) + 1;
+  };
 
   for (let ep = 0; ep < episodes; ep++) {
     const init = await initial_state({ compiled_spec, seats, seed: ep });
     let state = init.game_state;
-    let result = eval_victory(compiled_spec, state);
+    let result = eval_victory(compiled_spec, state, hitBranch);
     if (result === 'win') { wins++; continue; }
     if (result === 'loss') { losses++; continue; }
     if (result === 'tie') { ties++; continue; }
@@ -91,9 +108,10 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
         break; 
       }
 
+      hitAction(action.id);
       state = r.next_state;
       steps++;
-      result = eval_victory(compiled_spec, state);
+      result = eval_victory(compiled_spec, state, hitBranch);
 
       if (result === 'win') { wins++; break; }
       if (result === 'loss') { losses++; break; }
@@ -102,5 +120,5 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
     }
   }
 
-  return { episodes, steps, ties, wins, losses, no_action, violations };
+  return { episodes, steps, ties, wins, losses, no_action, violations, action_hits, branch_hits };
 }
