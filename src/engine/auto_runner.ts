@@ -19,7 +19,10 @@ export interface AutoRunnerSummary {
   ties: number;
   wins: number;
   losses: number;
-  no_actions: number;
+  /** episodes ended because no legal action was available or strategy returned null */
+  no_action: number;
+  /** episodes terminated due to strategy throwing an exception */
+  violations: number;
 }
 
 function eval_victory(compiled_spec: CompiledSpecType, state: GameState): string {
@@ -46,7 +49,8 @@ function get_strategry(strategies: AutoRunnerOptions['strategies'], seat: string
  * 基于策略的自动运行器：
  * - 每步通过 legal_actions_compiled 枚举候选行动
  * - 根据席位对应的 Strategy 选择下一步
- * - 无候选或 Strategy 返回 null 时结束该局，计为平局/无行动
+ * - 无候选或 Strategy 返回 null：结束该局，计为平局且记 no_action
+ * - Strategy.choose 抛错：记 violations 并终止该局
  */
 export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSummary> {
   const { compiled_spec, seats, episodes, max_steps = 100, strategies } = opts;
@@ -54,7 +58,8 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
   let losses = 0;
   let ties = 0;
   let steps = 0;
-  let no_actions = 0;
+  let no_action = 0;
+  let violations = 0;
 
   for (let ep = 0; ep < episodes; ep++) {
     const init = await initial_state({ compiled_spec, seats, seed: ep });
@@ -67,9 +72,16 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
     for (let i = 0; i < max_steps; i++) {
       const seat = state.active_seat || '';
       const calls = legal_actions_compiled({ compiled_spec: compiled_spec as any, game_state: state, by: seat, seats });
+      if (calls.length === 0) { ties++; no_action++; break; }
       const strat = get_strategry(strategies, seat, seats);
-      const next = strat.choose(calls, { seat, state });
-      if (!next) { ties++; no_actions++; break; }
+      let next;
+      try {
+        next = strat.choose(calls, { seat, state });
+      } catch (e) {
+        violations++;
+        break;
+      }
+      if (!next) { ties++; no_action++; break; }
 
       const action = { id: next.action, by: next.by, payload: next.payload || {}, seq: state.meta.last_seq + 1 };
       const r = await step({ compiled_spec, game_state: state, action });
@@ -90,5 +102,5 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
     }
   }
 
-  return { episodes, steps, ties, wins, losses, no_actions };
+  return { episodes, steps, ties, wins, losses, no_action, violations };
 }
