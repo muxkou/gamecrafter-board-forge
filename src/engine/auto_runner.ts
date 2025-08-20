@@ -1,6 +1,6 @@
 import { initial_state, step } from './index';
 import type { CompiledSpecType } from '../schema';
-import type { GameState } from '../types';
+import type { GameState, Event } from '../types';
 import { legal_actions_compiled } from './legal_actions_compiled';
 import type { Strategy } from './strategy';
 import { first_strategy } from './strategies';
@@ -11,6 +11,8 @@ export interface AutoRunnerOptions {
   episodes: number;
   max_steps?: number;
   strategies?: Record<string, Strategy> | Strategy[];
+  /** when true, collect event trajectory for each episode */
+  collect_trajectory?: boolean;
 }
 
 export interface AutoRunnerSummary {
@@ -27,6 +29,8 @@ export interface AutoRunnerSummary {
   action_hits: Record<string, number>;
   /** count of hit branches (e.g. victory conditions) */
   branch_hits: Record<string, number>;
+  /** optional trajectory of events for each episode */
+  trajectories?: Event[][];
 }
 
 function eval_victory(compiled_spec: CompiledSpecType, state: GameState, hit?: (key: string) => void): string {
@@ -61,7 +65,7 @@ function get_strategry(strategies: AutoRunnerOptions['strategies'], seat: string
  * - Strategy.choose 抛错：记 violations 并终止该局
  */
 export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSummary> {
-  const { compiled_spec, seats, episodes, max_steps = 100, strategies } = opts;
+  const { compiled_spec, seats, episodes, max_steps = 100, strategies, collect_trajectory } = opts;
   let wins = 0;
   let losses = 0;
   let ties = 0;
@@ -78,6 +82,7 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
     branch_hits[key] = (branch_hits[key] || 0) + 1;
   };
 
+  const trajectories: Event[][] = [];
   for (let ep = 0; ep < episodes; ep++) {
     const init = await initial_state({ compiled_spec, seats, seed: ep });
     let state = init.game_state;
@@ -85,6 +90,8 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
     if (result === 'win') { wins++; continue; }
     if (result === 'loss') { losses++; continue; }
     if (result === 'tie') { ties++; continue; }
+    const events: Event[] = [];
+    if (collect_trajectory) trajectories.push(events);
 
     for (let i = 0; i < max_steps; i++) {
       const seat = state.active_seat || '';
@@ -111,6 +118,7 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
       hitAction(action.id);
       state = r.next_state;
       steps++;
+      if (collect_trajectory && r.event) events.push(r.event);
       result = eval_victory(compiled_spec, state, hitBranch);
 
       if (result === 'win') { wins++; break; }
@@ -120,5 +128,5 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
     }
   }
 
-  return { episodes, steps, ties, wins, losses, no_action, violations, action_hits, branch_hits };
+  return { episodes, steps, ties, wins, losses, no_action, violations, action_hits, branch_hits, trajectories: collect_trajectory ? trajectories : undefined };
 }
