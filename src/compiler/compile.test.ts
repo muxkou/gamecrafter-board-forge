@@ -59,10 +59,18 @@ describe('compile', () => {
 			{ op: 'move_top', from_zone: 'deck', to_zone: 'hand', from_owner: 'by', to_owner: 'by', count: 1 }
 		]);
 
-		// action_hash = sha256(canonical_stringify(effect_pipeline))
-		const expectedActionHash = hash_sha256(canonical_stringify(draw.effect_pipeline));
-		expect(draw.action_hash).toBe(expectedActionHash);
-	});
+                // action_hash = sha256(canonical_stringify(effect_pipeline))
+                const expectedActionHash = hash_sha256(canonical_stringify(draw.effect_pipeline));
+                expect(draw.action_hash).toBe(expectedActionHash);
+
+                const firstSpecId = result.spec_id!;
+                const firstActionHash = draw.action_hash;
+
+                const second = await compile({ dsl });
+                expect(second.spec_id).toBe(firstSpecId);
+                const drawAgain = second.compiled_spec!.actions_index['draw'];
+                expect(drawAgain.action_hash).toBe(firstActionHash);
+        });
 
 	// 场景二：DSL schema 校验失败，ok=false 且无产物
 	it('should return ok=false when DSL schema validation fails', async () => {
