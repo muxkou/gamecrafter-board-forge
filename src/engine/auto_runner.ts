@@ -3,7 +3,7 @@ import type { CompiledSpecType } from '../schema';
 import type { GameState } from '../types';
 import { legal_actions_compiled } from './legal_actions_compiled';
 import type { Strategy } from './strategy';
-import { firstStrategy } from './strategy';
+import { firstStrategy } from './strategies';
 
 export interface AutoRunnerOptions {
   compiled_spec: CompiledSpecType;
