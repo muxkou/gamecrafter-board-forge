@@ -104,24 +104,45 @@ describe('engine.step', () => {
 		expect(r.error?.code).toBe('ILLEGAL_ACTION');
 	});
 
-	// 场景五：move_top 成功移动指定数量的实体
-	// compiled_spec 路径：通过解释器执行 effect_pipeline
-	it('move_top should move N items from source to target when valid (compiled path)', async () => {
-		const dsl = buildValidDSL();
-		const compiled = await compile({ dsl });
-		const seats = ['A', 'B'];
-		const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+       // 场景五：move_top 成功移动指定数量的实体
+       // compiled_spec 路径：通过解释器执行 effect_pipeline
+       it('move_top should move N items from source to target when valid (compiled path)', async () => {
+               const dsl = buildValidDSL();
+               const compiled = await compile({ dsl });
+               const seats = ['A', 'B'];
+               const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
 
-		// seed source items
-		const gs: any = base.game_state;
-		gs.zones.deck.instances['A'].items = ['c1', 'c2'];
-		gs.zones.hand.instances['A'].items = [];
+               // seed source items
+               const gs: any = base.game_state;
+               gs.zones.deck.instances['A'].items = ['c1', 'c2'];
+               gs.zones.hand.instances['A'].items = [];
 
-		const r = await step({ compiled_spec: compiled.compiled_spec!, game_state: gs, action: { id: 'draw', by: 'A', payload: { count: 2 }, seq: 1 } });
-		expect(r.ok).toBe(true);
-		const ns: any = r.next_state!;
-		expect(ns.zones.deck.instances['A'].items.length).toBe(0);
-		expect(ns.zones.hand.instances['A'].items.length).toBe(2);
-		expect(new Set(ns.zones.hand.instances['A'].items)).toEqual(new Set(['c1','c2']));
-	});
+               const r = await step({ compiled_spec: compiled.compiled_spec!, game_state: gs, action: { id: 'draw', by: 'A', payload: { count: 2 }, seq: 1 } });
+               expect(r.ok).toBe(true);
+               const ns: any = r.next_state!;
+               expect(ns.zones.deck.instances['A'].items.length).toBe(0);
+               expect(ns.zones.hand.instances['A'].items.length).toBe(2);
+               expect(new Set(ns.zones.hand.instances['A'].items)).toEqual(new Set(['c1','c2']));
+       });
+
+       // 场景六：move_top 省略 count 时默认移动 1 张
+       it('move_top should default count to 1 when omitted (fallback path)', async () => {
+               const dsl = buildValidDSL();
+               const compiled = await compile({ dsl });
+               const seats = ['A', 'B'];
+               const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+
+               const gs: any = base.game_state;
+               gs.zones.deck.instances['A'].items = ['c1', 'c2'];
+               gs.zones.hand.instances['A'].items = [];
+
+               const r = await step({
+                       game_state: gs,
+                       action: { id: 'move_top', by: 'A', payload: { from_zone: 'deck', to_zone: 'hand' }, seq: 1 }
+               });
+               expect(r.ok).toBe(true);
+               const ns: any = r.next_state!;
+               expect(ns.zones.deck.instances['A'].items).toEqual(['c1']);
+               expect(ns.zones.hand.instances['A'].items).toEqual(['c2']);
+       });
 });
