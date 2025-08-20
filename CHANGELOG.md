@@ -5,3 +5,4 @@
 ### Patch Changes
 
 - test
+- add strategy support to auto_runner
