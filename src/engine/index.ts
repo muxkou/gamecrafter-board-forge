@@ -215,3 +215,6 @@ export async function step(input: StepInput): Promise<StepOutput> {
     error: err("UNKNOWN_ACTION", `action '${action.id}' not implemented`)
   };
 }
+
+export type { Strategy, StrategyContext } from './strategy';
+export { firstStrategy, randomStrategy } from './strategies';
