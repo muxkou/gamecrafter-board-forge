@@ -10,6 +10,11 @@ export interface AutoRunnerOptions {
   seats: string[];
   episodes: number;
   max_steps?: number;
+  /**
+   * 策略映射：
+   * - 若传入数组，则按 seats 顺序分配；缺失或索引不存在时使用默认策略。
+   * - 若传入对象，则 key 为 seatId；未覆盖的 seat 也使用默认策略。
+   */
   strategies?: Record<string, Strategy> | Strategy[];
   /** when true, collect event trajectory for each episode */
   collect_trajectory?: boolean;
@@ -48,10 +53,14 @@ function eval_victory(compiled_spec: CompiledSpecType, state: GameState, hit?: (
   return 'ongoing';
 }
 
-function get_strategry(strategies: AutoRunnerOptions['strategies'], seat: string, seats: string[]): Strategy {
+function get_strategy(
+  strategies: AutoRunnerOptions['strategies'],
+  seat: string,
+  seats: string[],
+): Strategy {
   if (Array.isArray(strategies)) {
     const idx = seats.indexOf(seat);
-    return strategies[idx] || first_strategy;
+    return strategies[idx] ?? first_strategy;
   }
   if (strategies && seat in strategies) return strategies[seat];
   return first_strategy;
@@ -97,7 +106,7 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
       const seat = state.active_seat || '';
       const calls = legal_actions_compiled({ compiled_spec: compiled_spec as any, game_state: state, by: seat, seats });
       if (calls.length === 0) { ties++; no_action++; break; }
-      const strat = get_strategry(strategies, seat, seats);
+      const strat = get_strategy(strategies, seat, seats);
       let next;
       try {
         next = strat.choose(calls, { seat, state });
