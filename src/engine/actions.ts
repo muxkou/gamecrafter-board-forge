@@ -42,7 +42,7 @@ export async function move_top(
   const p = (action as any).payload ?? {};
   const from_zone: string = String(p.from_zone ?? "");
   const to_zone: string   = String(p.to_zone   ?? "");
-  const count: number     = p.count === null ? 1 : Number(p.count);
+  const count: number     = p.count == null ? 1 : Number(p.count);
 
   // 基本字段校验
   if (!from_zone || !to_zone) {
