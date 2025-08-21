@@ -203,7 +203,8 @@ export async function step(input: StepInput): Promise<StepOutput> {
       ts_logical: action.seq,
     };
 
-    const v = validate_state(next as GameState);
+    const next_state = next as GameState;
+    const v = validate_state(next_state);
     if (v.errors.length) {
       return {
         ok: false,
@@ -211,10 +212,14 @@ export async function step(input: StepInput): Promise<StepOutput> {
       };
     }
 
-    // 新状态哈希
-    const state_hash = hash_sha256(canonical_stringify(next));
+    // 新状态哈希：忽略 meta.created_at
+    const next_for_hash = {
+      ...next_state,
+      meta: { ...next_state.meta, created_at: undefined },
+    } as GameState;
+    const state_hash = hash_sha256(canonical_stringify(next_for_hash));
 
-    return { ok: true, next_state: next as GameState, event: ev, state_hash };
+    return { ok: true, next_state, event: ev, state_hash };
   }
 
   // 未实现的动作 → 统一报错

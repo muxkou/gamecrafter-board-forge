@@ -64,68 +64,84 @@ describe('engine.initial_state', () => {
 });
 
 describe('engine.step', () => {
-	// 场景二：end_turn 推进席位并在未环回时不自增回合
-	it('end_turn should advance active seat and keep turn unless wrapped (compiled fallback path)', async () => {
-		const dsl = buildValidDSL();
-		const compiled = await compile({ dsl });
-		const seats = ['A', 'B'];
-		const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+// 场景二：end_turn 推进席位并在未环回时不自增回合
+it('end_turn should advance active seat and keep turn unless wrapped (compiled fallback path)', async () => {
+const dsl = buildValidDSL();
+const compiled = await compile({ dsl });
+const seats = ['A', 'B'];
+const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
 
-		const r = await step({ game_state: base.game_state, action: { id: 'end_turn', by: 'A', payload: {}, seq: 1 } });
-		expect(r.ok).toBe(true);
-		const ns = r.next_state!;
-		expect(ns.active_seat).toBe('B');
-		expect(ns.turn).toBe(1);
-		expect(ns.meta.last_seq).toBe(1);
-		expect(r.state_hash?.startsWith('sha256:')).toBe(true);
-	});
+const r = await step({ game_state: base.game_state, action: { id: 'end_turn', by: 'A', payload: {}, seq: 1 } });
+expect(r.ok).toBe(true);
+const ns = r.next_state!;
+expect(ns.active_seat).toBe('B');
+expect(ns.turn).toBe(1);
+expect(ns.meta.last_seq).toBe(1);
+expect(r.state_hash?.startsWith('sha256:')).toBe(true);
+});
 
-	// 场景三：非递增 seq 被拒绝
-	it('duplicate or non-increasing seq should be rejected', async () => {
-		const dsl = buildValidDSL();
-		const compiled = await compile({ dsl });
-		const seats = ['A', 'B'];
-		const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+        // 场景三：state_hash 应忽略 meta.created_at
+        it('state_hash should ignore meta.created_at', async () => {
+                const dsl = buildValidDSL();
+                const compiled = await compile({ dsl });
+                const seats = ['A', 'B'];
+                const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
 
-		const r = await step({ game_state: base.game_state, action: { id: 'end_turn', by: 'A', payload: {}, seq: 0 } });
-		expect(r.ok).toBe(false);
-		expect(r.error?.code).toBe('DUPLICATE_SEQ');
-	});
+                const gs1: any = JSON.parse(JSON.stringify(base.game_state));
+                const gs2: any = JSON.parse(JSON.stringify(base.game_state));
+                gs2.meta.created_at += 100;
 
-	// 场景四：非当前席位执行动作被拒绝
-	it('illegal action by non-active seat should be rejected', async () => {
-		const dsl = buildValidDSL();
-		const compiled = await compile({ dsl });
-		const seats = ['A', 'B'];
-		const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+                const r1 = await step({ game_state: gs1, action: { id: 'end_turn', by: 'A', payload: {}, seq: 1 } });
+                const r2 = await step({ game_state: gs2, action: { id: 'end_turn', by: 'A', payload: {}, seq: 1 } });
+                expect(r1.state_hash).toBe(r2.state_hash);
+        });
 
-		const r = await step({ game_state: base.game_state, action: { id: 'end_turn', by: 'B', payload: {}, seq: 1 } });
-		expect(r.ok).toBe(false);
-		expect(r.error?.code).toBe('ILLEGAL_ACTION');
-	});
+        // 场景四：非递增 seq 被拒绝
+        it('duplicate or non-increasing seq should be rejected', async () => {
+                const dsl = buildValidDSL();
+                const compiled = await compile({ dsl });
+                const seats = ['A', 'B'];
+                const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
 
-        // 场景五：move_top 成功移动指定数量的实体
+                const r = await step({ game_state: base.game_state, action: { id: 'end_turn', by: 'A', payload: {}, seq: 0 } });
+                expect(r.ok).toBe(false);
+                expect(r.error?.code).toBe('DUPLICATE_SEQ');
+        });
+
+        // 场景五：非当前席位执行动作被拒绝
+        it('illegal action by non-active seat should be rejected', async () => {
+                const dsl = buildValidDSL();
+                const compiled = await compile({ dsl });
+                const seats = ['A', 'B'];
+                const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+
+                const r = await step({ game_state: base.game_state, action: { id: 'end_turn', by: 'B', payload: {}, seq: 1 } });
+                expect(r.ok).toBe(false);
+                expect(r.error?.code).toBe('ILLEGAL_ACTION');
+        });
+
+        // 场景六：move_top 成功移动指定数量的实体
         // compiled_spec 路径：通过解释器执行 effect_pipeline
         it('move_top should move N items from source to target when valid (compiled path)', async () => {
                 const dsl = buildValidDSL();
                 const compiled = await compile({ dsl });
-		const seats = ['A', 'B'];
-		const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+                const seats = ['A', 'B'];
+                const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
 
-		// seed source items
-		const gs: any = base.game_state;
-		gs.zones.deck.instances['A'].items = ['c1', 'c2'];
-		gs.zones.hand.instances['A'].items = [];
+                // seed source items
+                const gs: any = base.game_state;
+                gs.zones.deck.instances['A'].items = ['c1', 'c2'];
+                gs.zones.hand.instances['A'].items = [];
 
-		const r = await step({ compiled_spec: compiled.compiled_spec!, game_state: gs, action: { id: 'draw', by: 'A', payload: { count: 2 }, seq: 1 } });
-		expect(r.ok).toBe(true);
-		const ns: any = r.next_state!;
-		expect(ns.zones.deck.instances['A'].items.length).toBe(0);
-		expect(ns.zones.hand.instances['A'].items.length).toBe(2);
+                const r = await step({ compiled_spec: compiled.compiled_spec!, game_state: gs, action: { id: 'draw', by: 'A', payload: { count: 2 }, seq: 1 } });
+                expect(r.ok).toBe(true);
+                const ns: any = r.next_state!;
+                expect(ns.zones.deck.instances['A'].items.length).toBe(0);
+                expect(ns.zones.hand.instances['A'].items.length).toBe(2);
                 expect(new Set(ns.zones.hand.instances['A'].items)).toEqual(new Set(['c1','c2']));
         });
 
-        // 场景六：move_top 缺省 count 时默认为 1
+        // 场景七：move_top 缺省 count 时默认为 1
         it('move_top defaults count to 1 when omitted', async () => {
                 const dsl = buildValidDSL();
                 const compiled = await compile({ dsl });
