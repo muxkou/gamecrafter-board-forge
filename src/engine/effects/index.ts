@@ -3,9 +3,16 @@ import { exec_shuffle, type ShuffleOp } from './shuffle';
 import { exec_deal, type DealOp } from './deal';
 import { exec_set_var, type SetVarOp } from './set_var';
 import { exec_spawn, type SpawnOp } from './spawn';
+import { exec_set_phase, type SetPhaseOp } from './set_phase';
 import type { EffectExecutor } from './types';
 
-export type EffectOp = MoveTopOp | ShuffleOp | DealOp | SetVarOp | SpawnOp;
+export type EffectOp =
+  | MoveTopOp
+  | ShuffleOp
+  | DealOp
+  | SetVarOp
+  | SpawnOp
+  | SetPhaseOp;
 
 export const effectExecutors: Record<EffectOp['op'], EffectExecutor<any>> = {
   move_top: exec_move_top,
@@ -13,6 +20,7 @@ export const effectExecutors: Record<EffectOp['op'], EffectExecutor<any>> = {
   deal: exec_deal,
   set_var: exec_set_var,
   spawn: exec_spawn,
+  set_phase: exec_set_phase,
 };
 
 
