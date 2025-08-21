@@ -22,16 +22,18 @@ function dslWithActions() {
 		phases: [
 			{ id: 'main', transitions: [] }
 		],
-		actions: [
-			// 默认 by → by（会解析为 call.by）
-			{ id: 'draw', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', count: 1 } ] },
-			// 使用 active 占位，忽略 call.by，以 state.active_seat 解析
-			{ id: 'draw_active', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', from_owner: 'active', to_owner: 'active', count: 1 } ] },
-			// 指定常量席位字符串作为 owner
-			{ id: 'give_to_B', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', to_owner: 'B', count: 1 } ] },
-		],
-		victory: { order: [ { when: true, result: 'ongoing' } ] },
-	};
+                actions: [
+                        // 默认 by → by（会解析为 call.by）
+                        { id: 'draw', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', count: 1 } ] },
+                        // 使用 active 占位，忽略 call.by，以 state.active_seat 解析
+                        { id: 'draw_active', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', from_owner: 'active', to_owner: 'active', count: 1 } ] },
+                        // 指定常量席位字符串作为 owner
+                        { id: 'give_to_B', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', to_owner: 'B', count: 1 } ] },
+                        // 前置条件恒为假
+                        { id: 'forbidden', require: false, effect: [] },
+                ],
+                victory: { order: [ { when: true, result: 'ongoing' } ] },
+        };
 }
 
 async function buildCompiledAndInit() {
@@ -96,15 +98,30 @@ describe('step_compiled (interpreter)', () => {
 		expect(ns3.zones.hand.instances['A'].items).toEqual(['c1']);
 	});
 
-	it('throws on unknown action', async () => {
-		const { compiled_spec, init } = await buildCompiledAndInit();
+        it('throws on unknown action', async () => {
+                const { compiled_spec, init } = await buildCompiledAndInit();
 
-		expect(() => step_compiled({
-			compiled_spec,
-			game_state: init.game_state,
-			action: { action: 'not_exist', by: 'A', payload: {} }
-		})).toThrowError();
-	});
+                expect(() => step_compiled({
+                        compiled_spec,
+                        game_state: init.game_state,
+                        action: { action: 'not_exist', by: 'A', payload: {} }
+                })).toThrowError();
+        });
+
+        it('throws structured error when require_ast evaluates to false', async () => {
+                const { compiled_spec, init } = await buildCompiledAndInit();
+                let err: any = null;
+                try {
+                        step_compiled({
+                                compiled_spec,
+                                game_state: init.game_state,
+                                action: { action: 'forbidden', by: 'A', payload: {} }
+                        });
+                } catch (e) {
+                        err = e;
+                }
+                expect(err).toMatchObject({ code: 'REQUIRE_FAILED', action: 'forbidden' });
+        });
 
 	it('integration with legal_actions_compiled: suggested calls are executable', async () => {
 		const { compiled_spec, init } = await buildCompiledAndInit();
