@@ -55,6 +55,8 @@ function dslWithNewOps() {
                         { id: 'shuffle_deck', effect: [ { op: 'shuffle', zone: 'deck', owner: '_' } ] },
                         { id: 'deal_all', effect: [ { op: 'deal', from_zone: 'deck', to_zone: 'hand', from_owner: '_', to_owner: 'seat', count: 1 } ] },
                         { id: 'set_score', effect: [ { op: 'set_var', key: 'score', value: 5 } ] },
+                        { id: 'spawn_one', effect: [ { op: 'spawn', entity: 'card', to_zone: 'hand' } ] },
+                        { id: 'destroy_one', effect: [ { op: 'destroy', from_zone: 'hand', count: 1 } ] },
                 ],
                 victory: { order: [ { when: true, result: 'ongoing' } ] },
         };
@@ -228,12 +230,37 @@ describe('new effect ops', () => {
                 expect(next_state.vars.score).toBe(5);
         });
 
+        it('executes spawn creating entity in hand', async () => {
+                const { compiled_spec, init } = await build();
+                const { next_state } = step_compiled({ compiled_spec, game_state: init.game_state, action: { action: 'spawn_one', by: 'A', payload: {} } });
+                const ns: any = next_state as any;
+                expect(ns.zones.hand.instances['A'].items.length).toBe(1);
+                const eid = ns.zones.hand.instances['A'].items[0];
+                expect(ns.entities[eid].entity_type).toBe('card');
+        });
+
+        it('executes destroy removing entity from hand', async () => {
+                const { compiled_spec, init } = await build();
+                const gs: any = init.game_state;
+                gs.zones.hand.instances['A'].items = ['e1'];
+                gs.entities['e1'] = { entity_type: 'card', props: {} } as any;
+                const { next_state } = step_compiled({ compiled_spec, game_state: gs, action: { action: 'destroy_one', by: 'A', payload: {} } });
+                const ns: any = next_state as any;
+                expect(ns.zones.hand.instances['A'].items.length).toBe(0);
+                expect(ns.entities['e1']).toBeUndefined();
+        });
+
         it('legal_actions_compiled includes new ops', async () => {
                 const { compiled_spec, init } = await build();
-                const calls = legal_actions_compiled({ compiled_spec: compiled_spec as any, game_state: init.game_state, by: 'A', seats: ['A','B'] });
+                const gs: any = init.game_state;
+                gs.zones.hand.instances['A'].items = ['e1'];
+                gs.entities['e1'] = { entity_type: 'card', props: {} } as any;
+                const calls = legal_actions_compiled({ compiled_spec: compiled_spec as any, game_state: gs, by: 'A', seats: ['A','B'] });
                 expect(calls.some(c => c.action === 'shuffle_deck')).toBe(true);
                 expect(calls.some(c => c.action === 'deal_all')).toBe(true);
                 expect(calls.some(c => c.action === 'set_score')).toBe(true);
+                expect(calls.some(c => c.action === 'spawn_one')).toBe(true);
+                expect(calls.some(c => c.action === 'destroy_one')).toBe(true);
         });
 });
 

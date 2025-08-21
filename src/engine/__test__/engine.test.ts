@@ -238,4 +238,31 @@ expect(r.state_hash?.startsWith('sha256:')).toBe(true);
                 expect(r.ok).toBe(true);
                 expect(r.next_state?.phase).toBe('night');
         });
+
+        // 场景十：spawn/destroy 应分配和回收实体 ID
+        it('spawn and destroy should allocate unique ids and remove entities', async () => {
+                const dsl = buildValidDSL();
+                dsl.actions.push(
+                        { id: 'spawn_card', effect: [ { op: 'spawn', entity: 'card', to_zone: 'hand' } ] },
+                        { id: 'destroy_card', effect: [ { op: 'destroy', from_zone: 'hand', count: 1 } ] },
+                );
+                const compiled = await compile({ dsl });
+                const seats = ['A', 'B'];
+                const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+
+                let r = await step({ compiled_spec: compiled.compiled_spec!, game_state: base.game_state, action: { id: 'spawn_card', by: 'A', payload: {}, seq: 1 } });
+                expect(r.ok).toBe(true);
+                const eid1 = (r.next_state as any).zones.hand.instances['A'].items[0];
+
+                r = await step({ compiled_spec: compiled.compiled_spec!, game_state: r.next_state!, action: { id: 'destroy_card', by: 'A', payload: {}, seq: 2 } });
+                expect(r.ok).toBe(true);
+                const afterDestroy: any = r.next_state!;
+                expect(afterDestroy.zones.hand.instances['A'].items.length).toBe(0);
+                expect(afterDestroy.entities[eid1]).toBeUndefined();
+
+                r = await step({ compiled_spec: compiled.compiled_spec!, game_state: afterDestroy, action: { id: 'spawn_card', by: 'A', payload: {}, seq: 3 } });
+                expect(r.ok).toBe(true);
+                const eid2 = (r.next_state as any).zones.hand.instances['A'].items[0];
+                expect(eid2).not.toBe(eid1);
+        });
 });

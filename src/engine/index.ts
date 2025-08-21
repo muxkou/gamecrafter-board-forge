@@ -112,7 +112,7 @@ export async function initial_state(input: InitialStateInput): Promise<InitialSt
     rng_state: String(rng.state >>> 0),
 
     // 元信息：包含 schema 版本、创建时间与最后动作序号
-    meta: { schema_version: 1, created_at: now, last_seq: 0 },
+    meta: { schema_version: 1, created_at: now, last_seq: 0, next_eid: 1 },
   };
 
   // 初始化事件（占位一条 "setup"），方便回放/审计

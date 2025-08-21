@@ -106,13 +106,15 @@ describe('compile', () => {
         });
 
         // 场景四：规范化新 effect op（shuffle/deal/set_var）
-        it('should normalize shuffle/deal/set_var ops', async () => {
+        it('should normalize shuffle/deal/set_var/spawn/destroy ops', async () => {
                 const dsl = buildValidDSL();
                 dsl.actions.push(
                         { id: 'shuf', effect: [ { op: 'shuffle', zone: 'deck' } ] },
                         { id: 'deal', effect: [ { op: 'deal', from_zone: 'deck', to_zone: 'hand', to_owner: 'seat', count: 1 } ] },
                         { id: 'setv', effect: [ { op: 'set_var', key: 'foo', value: 42 } ] },
                         { id: 'phase', effect: [ { op: 'set_phase', phase: 'main' } ] },
+                        { id: 'spawn', effect: [ { op: 'spawn', entity: 'card', to_zone: 'hand' } ] },
+                        { id: 'kill', effect: [ { op: 'destroy', from_zone: 'hand', count: 1 } ] },
                 );
                 const result = await compile({ dsl });
                 expect(result.ok).toBe(true);
@@ -128,6 +130,12 @@ describe('compile', () => {
                 ]);
                 expect(compiled.actions_index['phase'].effect_pipeline).toEqual([
                         { op: 'set_phase', phase: 'main' }
+                ]);
+                expect(compiled.actions_index['spawn'].effect_pipeline).toEqual([
+                        { op: 'spawn', entity: 'card', to_zone: 'hand', owner: 'by', count: 1, props: undefined }
+                ]);
+                expect(compiled.actions_index['kill'].effect_pipeline).toEqual([
+                        { op: 'destroy', from_zone: 'hand', owner: 'by', count: 1 }
                 ]);
         });
 });

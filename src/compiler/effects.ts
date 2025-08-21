@@ -24,6 +24,22 @@ type DealNode = {
   count: number;
 };
 
+type SpawnNode = {
+  op: 'spawn';
+  entity: string;
+  to_zone: string;
+  owner: 'seat' | 'by' | 'active' | string;
+  count: number;
+  props?: Record<string, unknown>;
+};
+
+type DestroyNode = {
+  op: 'destroy';
+  from_zone: string;
+  owner: 'seat' | 'by' | 'active' | string;
+  count: number;
+};
+
 type SetVarNode = {
   op: 'set_var';
   key: string;
@@ -39,14 +55,16 @@ type EffectNode =
   | MoveTopNode
   | ShuffleNode
   | DealNode
+  | SpawnNode
+  | DestroyNode
   | SetVarNode
   | SetPhaseNode;
-
-const Supported_Effect_Op = ['move_top', 'shuffle', 'deal', 'set_var', 'set_phase'];
+const Supported_Effect_Op = ['move_top', 'shuffle', 'deal', 'spawn', 'destroy', 'set_var', 'set_phase'];
 
 export function normalize_effect_pipeline(
   raw: unknown,
   zones_index: CompiledSpecType['zones_index'],
+  entities_index: Record<string, unknown>,
   add_issue: (_code: string, _path: string, _msg: string) => void
 ): EffectNode[] | null {
   if (!Array.isArray(raw)) {
@@ -136,6 +154,47 @@ export function normalize_effect_pipeline(
       if (zTo   && !supported(zTo.kind))   add_issue('KIND_UNSUPPORTED', `/actions/*/effect/${i}/to_zone`,   `kind '${zTo.kind}' not supported by deal`);
 
       out.push({ op: 'deal', from_zone, to_zone, from_owner, to_owner, count });
+    }
+    else if (node.op === 'spawn') {
+      const entity = String(node.entity ?? '');
+      const to_zone = String(node.to_zone ?? '');
+      const owner = (node.owner ?? 'by') as SpawnNode['owner'];
+      const count = node.count == null ? 1 : Number(node.count);
+
+      if (!entity || !to_zone) {
+        add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}`, 'entity/to_zone is required');
+        return null;
+      }
+      if (!Number.isInteger(count) || count <= 0) {
+        add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}/count`, 'count must be positive integer');
+        return null;
+      }
+
+      const z = zones_index[to_zone];
+      if (!z) add_issue('REF_NOT_FOUND', `/actions/*/effect/${i}/to_zone`, `zone '${to_zone}' not found`);
+      if (!entities_index[entity])
+        add_issue('REF_NOT_FOUND', `/actions/*/effect/${i}/entity`, `entity '${entity}' not found`);
+
+      out.push({ op: 'spawn', entity, to_zone, owner, count, props: node.props });
+    }
+    else if (node.op === 'destroy') {
+      const from_zone = String(node.from_zone ?? '');
+      const owner = (node.owner ?? 'by') as DestroyNode['owner'];
+      const count = node.count == null ? 1 : Number(node.count);
+
+      if (!from_zone) {
+        add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}`, 'from_zone is required');
+        return null;
+      }
+      if (!Number.isInteger(count) || count <= 0) {
+        add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}/count`, 'count must be positive integer');
+        return null;
+      }
+
+      const z = zones_index[from_zone];
+      if (!z) add_issue('REF_NOT_FOUND', `/actions/*/effect/${i}/from_zone`, `zone '${from_zone}' not found`);
+
+      out.push({ op: 'destroy', from_zone, owner, count });
     }
     else if (node.op === 'set_var') {
       const key = String(node.key ?? "");
