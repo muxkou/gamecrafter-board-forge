@@ -22,16 +22,18 @@ function dslWithActions() {
 		phases: [
 			{ id: 'main', transitions: [] }
 		],
-                actions: [
-                        // 默认 by → by（会解析为 call.by）
-                        { id: 'draw', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', count: 1 } ] },
-                        // 使用 active 占位，忽略 call.by，以 state.active_seat 解析
-                        { id: 'draw_active', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', from_owner: 'active', to_owner: 'active', count: 1 } ] },
-                        // 指定常量席位字符串作为 owner
-                        { id: 'give_to_B', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', to_owner: 'B', count: 1 } ] },
-                        // 前置条件恒为假
-                        { id: 'forbidden', require: false, effect: [] },
-                ],
+                  actions: [
+                          // 默认 by → by（会解析为 call.by）
+                          { id: 'draw', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', count: 1 } ] },
+                          // 使用 active 占位，忽略 call.by，以 state.active_seat 解析
+                          { id: 'draw_active', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', from_owner: 'active', to_owner: 'active', count: 1 } ] },
+                          // 指定常量席位字符串作为 owner
+                          { id: 'give_to_B', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', to_owner: 'B', count: 1 } ] },
+                          // 前置条件恒为假
+                          { id: 'forbidden', require: false, effect: [] },
+                          // 带 input_spec 的动作
+                          { id: 'draw_n', input: { type: 'object', properties: { count: { type: 'number' } }, required: ['count'], additionalProperties: false }, effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', count: 1 } ] },
+                  ],
                 victory: { order: [ { when: true, result: 'ongoing' } ] },
         };
 }
@@ -143,6 +145,35 @@ describe('step_compiled (interpreter)', () => {
                         err = e;
                 }
                 expect(err).toMatchObject({ code: 'REQUIRE_FAILED', action: 'forbidden' });
+        });
+
+        it('validates payload against input_spec', async () => {
+                const { compiled_spec, init } = await buildCompiledAndInit();
+                const gs: any = init.game_state;
+                gs.zones.deck.instances['A'].items = ['c1'];
+                gs.zones.hand.instances['A'].items = [];
+                const { next_state } = step_compiled({
+                        compiled_spec,
+                        game_state: gs,
+                        action: { action: 'draw_n', by: 'A', payload: { count: 1 } }
+                });
+                const ns: any = next_state as any;
+                expect(ns.zones.hand.instances['A'].items).toEqual(['c1']);
+        });
+
+        it('throws BAD_PAYLOAD when payload mismatches input_spec', async () => {
+                const { compiled_spec, init } = await buildCompiledAndInit();
+                let err: any = null;
+                try {
+                        step_compiled({
+                                compiled_spec,
+                                game_state: init.game_state,
+                                action: { action: 'draw_n', by: 'A', payload: { count: 'x' as any } }
+                        });
+                } catch (e) {
+                        err = e;
+                }
+                expect(err).toMatchObject({ code: 'BAD_PAYLOAD' });
         });
 
 	it('integration with legal_actions_compiled: suggested calls are executable', async () => {

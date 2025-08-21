@@ -5,6 +5,7 @@ import { validate_state } from './validate';
 import { effectExecutors, type EffectOp } from './effects';
 import type { CompiledActionCall, InterpreterCtx } from './effects/types';
 import { eval_condition } from './helpers/expr.util';
+import z from 'zod';
 
 // 与编译产物的 actions_index[key] 对齐的最小必要形状
 type CompiledActionDef = {
@@ -15,6 +16,39 @@ type CompiledActionDef = {
 };
 
 const EXECUTORS: Record<EffectOp['op'], (op: any, ctx: InterpreterCtx) => GameState> = effectExecutors;
+
+function jsonSchemaToZod(schema: any): z.ZodTypeAny {
+  if (!schema || Object.keys(schema).length === 0) return z.any();
+  switch (schema.type) {
+    case 'object': {
+      const props = schema.properties || {};
+      const required: string[] = schema.required || [];
+      const shape: Record<string, z.ZodTypeAny> = {};
+      for (const key of Object.keys(props)) {
+        const child = jsonSchemaToZod(props[key]);
+        shape[key] = required.includes(key) ? child : child.optional();
+      }
+      let obj = z.object(shape);
+      if (schema.additionalProperties === false) obj = obj.strict();
+      return obj;
+    }
+    case 'string':
+      return z.string();
+    case 'number':
+    case 'integer':
+      return z.number();
+    case 'boolean':
+      return z.boolean();
+    case 'array':
+      return z.array(jsonSchemaToZod(schema.items || {}));
+    default:
+      return z.any();
+  }
+}
+
+function getInputValidator(def: CompiledActionDef): z.ZodTypeAny {
+  return (def as any).__inputValidator ?? ((def as any).__inputValidator = jsonSchemaToZod(def.input_spec));
+}
 
 export function step_compiled(args: {
   compiled_spec: CompiledSpecType;
@@ -34,9 +68,16 @@ export function step_compiled(args: {
     throw new Error(`动作 ${action.action} 的 effect_pipeline 非数组`);
   }
 
+  const validator = getInputValidator(def);
+  const parsed = validator.safeParse(action.payload);
+  if (!parsed.success) {
+    throw { code: 'BAD_PAYLOAD', issues: parsed.error.issues };
+  }
+  const call: CompiledActionCall = { ...action, payload: parsed.data };
+
   // 逐条执行（纯函数，不就地修改）
   let state = game_state;
-  const ctx: InterpreterCtx = { compiled: compiled_spec, state, call: action, context };
+  const ctx: InterpreterCtx = { compiled: compiled_spec, state, call, context };
 
   // evaluate precondition; if false, throw a structured error
   if (!eval_condition(def.require_ast, ctx)) {
