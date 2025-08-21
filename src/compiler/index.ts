@@ -68,6 +68,7 @@ export async function compile(input: CompileInput): Promise<CompileOutput> {
     const pipeline = normalize_effect_pipeline(
       a.effect ?? [],          // 没写 effect 就当空管线
       zones_index,
+      entities_index,
       addIssue
     );
 

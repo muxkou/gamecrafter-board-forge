@@ -17,7 +17,7 @@ export const exec_spawn: EffectExecutor<SpawnOp> = (op, ctx) => {
   }
   const owners = op.owner === 'seat' ? ctx.state.seats : [resolve_owner(op.owner, ctx)];
   let state = ctx.state;
-  let eidCounter = Object.keys(state.entities).length;
+  let eidCounter = state.meta?.next_eid || 1;
   for (const owner of owners) {
     const zone: any = state.zones[op.to_zone];
     if (!zone) throw new Error(`zone '${op.to_zone}' not found`);
@@ -41,6 +41,7 @@ export const exec_spawn: EffectExecutor<SpawnOp> = (op, ctx) => {
       ...state,
       entities,
       zones: { ...state.zones, [op.to_zone]: nextZone },
+      meta: { ...state.meta, next_eid: eidCounter },
     } as any;
   }
   return state;

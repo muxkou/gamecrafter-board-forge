@@ -34,7 +34,20 @@ type MoveTopOp = {
   count?: number;
 };
 
-type EffectPipelineOp = { op: 'move_top' | 'shuffle' | 'deal' | 'set_var' } & Record<string, unknown>;
+type SpawnOp = {
+  op: 'spawn';
+  to_zone: string;
+  owner: 'by' | 'active' | 'seat' | string;
+  count?: number;
+};
+
+type DestroyOp = {
+  op: 'destroy';
+  from_zone: string;
+  owner: 'by' | 'active' | 'seat' | string;
+  count?: number;
+};
+type EffectPipelineOp = { op: 'move_top' | 'shuffle' | 'deal' | 'set_var' | 'spawn' | 'destroy' } & Record<string, unknown>;
 
 type EffectDef = {
   action_hash: string;
@@ -118,54 +131,90 @@ export function legal_actions_compiled(args: {
     const pipeline = def.effect_pipeline;
     if (!Array.isArray(pipeline) || pipeline.length === 0) continue;
 
-    const supported = ['move_top', 'shuffle', 'deal', 'set_var'];
+    const supported = ['move_top', 'shuffle', 'deal', 'set_var', 'spawn', 'destroy'];
     if (pipeline.some(op => !supported.includes(op.op))) continue;
 
-    // 若 pipeline 不含 move_top，则直接认为可行（无资源校验）
-    const firstMove = pipeline.find(op => op.op === 'move_top') as MoveTopOp | undefined;
-    if (!firstMove) {
+    // 找出首个涉及资源的 op（move_top/spawn/destroy）
+    const first = pipeline.find(op => op.op === 'move_top' || op.op === 'spawn' || op.op === 'destroy') as (MoveTopOp | SpawnOp | DestroyOp | undefined);
+    if (!first) {
       out.push({ action: name, by });
       continue;
     }
 
-    // 目前仅对首个 move_top 做可行性判断
-    const first = firstMove;
+    if (first.op === 'move_top') {
+      const fromMeta = zones[first.from_zone];
+      const toMeta   = zones[first.to_zone];
+      if (!fromMeta || !toMeta) continue;
 
-    const fromMeta = zones[first.from_zone];
-    const toMeta   = zones[first.to_zone];
-    if (!fromMeta || !toMeta) continue;
+      const fromOwners = resolveOwnerCandidates(first.from_owner as any, by, game_state, seats);
+      const toOwners   = resolveOwnerCandidates(first.to_owner as any, by, game_state, seats);
 
-    // owner 候选集合（'seat' 会枚举所有座位）
-    const fromOwners = resolveOwnerCandidates(first.from_owner as any, by, game_state, seats);
-    const toOwners   = resolveOwnerCandidates(first.to_owner as any, by, game_state, seats);
+      for (const fromSeat of fromOwners) {
+        const fromKey = inst_key(fromMeta, fromSeat);
+        const srcLen  = getItemsLen(game_state, first.from_zone, fromKey);
+        if (srcLen <= 0) continue;
 
-    for (const fromSeat of fromOwners) {
-      const fromKey = inst_key(fromMeta, fromSeat);
-      const srcLen  = getItemsLen(game_state, first.from_zone, fromKey);
-      if (srcLen <= 0) continue;
+        for (const toSeat of toOwners) {
+          const toKey     = inst_key(toMeta, toSeat);
+          const destFree  = capacityLeft(game_state, toMeta, first.to_zone, toKey);
+          let maxCount    = Math.min(srcLen, destFree);
 
-      for (const toSeat of toOwners) {
-        const toKey     = inst_key(toMeta, toSeat);
-        const destFree  = capacityLeft(game_state, toMeta, first.to_zone, toKey);
-        let maxCount    = Math.min(srcLen, destFree);
+          // 同区同 owner 移动：算 no-op，直接跳过
+          if (first.from_zone === first.to_zone && fromKey === toKey) continue;
+          if (maxCount <= 0) continue;
 
-        // 同区同 owner 移动：算 no-op，直接跳过
-        if (first.from_zone === first.to_zone && fromKey === toKey) continue;
+          const cap = typeof maxCountsPerAction === 'number' && maxCountsPerAction > 0
+            ? Math.min(maxCount, maxCountsPerAction)
+            : maxCount;
+
+          for (let c = 1; c <= cap; c++) {
+            const payload: Record<string, unknown> = { count: c };
+            if (first.from_owner === 'seat') payload.seat = fromSeat;
+            if (first.to_owner === 'seat') payload.seat = toSeat;
+            out.push({ action: name, by, payload });
+          }
+        }
+      }
+    } else if (first.op === 'spawn') {
+      const meta = zones[first.to_zone];
+      if (!meta) continue;
+
+      const owners = resolveOwnerCandidates(first.owner as any, by, game_state, seats);
+      for (const seat of owners) {
+        const key = inst_key(meta, seat);
+        const destFree = capacityLeft(game_state, meta, first.to_zone, key);
+        let maxCount = destFree;
+        if (!Number.isFinite(maxCount)) maxCount = 1;
         if (maxCount <= 0) continue;
 
-        // count 来源：payload 覆盖 > op.count > 默认 1
-        // 这里生成 1..maxCount 的全部候选，必要时截断
         const cap = typeof maxCountsPerAction === 'number' && maxCountsPerAction > 0
           ? Math.min(maxCount, maxCountsPerAction)
           : maxCount;
 
         for (let c = 1; c <= cap; c++) {
           const payload: Record<string, unknown> = { count: c };
-          // 若任一 owner 使用了 'seat' 解析，写入 payload.seat（简化：同键覆盖；
-          // 若需同时区分来源/去向席位，建议扩展为 from_seat/to_seat）
-          if (first.from_owner === 'seat') payload.seat = fromSeat;
-          if (first.to_owner === 'seat') payload.seat = toSeat;
+          if (first.owner === 'seat') payload.seat = seat;
+          out.push({ action: name, by, payload });
+        }
+      }
+    } else if (first.op === 'destroy') {
+      const meta = zones[first.from_zone];
+      if (!meta) continue;
 
+      const owners = resolveOwnerCandidates(first.owner as any, by, game_state, seats);
+      for (const seat of owners) {
+        const key = inst_key(meta, seat);
+        const srcLen = getItemsLen(game_state, first.from_zone, key);
+        let maxCount = srcLen;
+        if (maxCount <= 0) continue;
+
+        const cap = typeof maxCountsPerAction === 'number' && maxCountsPerAction > 0
+          ? Math.min(maxCount, maxCountsPerAction)
+          : maxCount;
+
+        for (let c = 1; c <= cap; c++) {
+          const payload: Record<string, unknown> = { count: c };
+          if (first.owner === 'seat') payload.seat = seat;
           out.push({ action: name, by, payload });
         }
       }

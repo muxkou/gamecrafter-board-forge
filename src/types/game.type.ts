@@ -16,6 +16,7 @@ export interface GameState {
     schema_version: number;
     created_at?: number;
     last_seq: number;
+    next_eid: number;
   };
 }
 
