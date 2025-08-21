@@ -4,6 +4,7 @@ import { CompiledSpecType } from '../schema';
 import { validate_state } from './validate';
 import { effectExecutors, type EffectOp } from './effects';
 import type { CompiledActionCall, InterpreterCtx } from './effects/types';
+import { eval_condition } from './helpers/expr.util';
 
 // 与编译产物的 actions_index[key] 对齐的最小必要形状
 type CompiledActionDef = {
@@ -36,6 +37,11 @@ export function step_compiled(args: {
   // 逐条执行（纯函数，不就地修改）
   let state = game_state;
   const ctx: InterpreterCtx = { compiled: compiled_spec, state, call: action, context };
+
+  // evaluate precondition; if false, throw a structured error
+  if (!eval_condition(def.require_ast, ctx)) {
+    throw { code: 'REQUIRE_FAILED', action: action.action, message: `requirement not met for action ${action.action}` };
+  }
 
   for (const op of pipeline) {
     const exec = EXECUTORS[op.op as EffectOp['op']];
