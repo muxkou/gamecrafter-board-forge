@@ -14,7 +14,7 @@ export interface GameState {
   rng_state: string;
   meta: {
     schema_version: number;
-    created_at: number;
+    created_at?: number;
     last_seq: number;
   };
 }
