@@ -2,6 +2,7 @@ import { CompiledSpecType, DSLType, issue, parse_dsl } from '../schema';
 import type { ValidationIssue, CompileInput, CompileOutput } from '../types';
 import { canonical_stringify, hash_sha256 } from '../utils/canonical.util';
 import { normalize_effect_pipeline } from './effects';
+import { normalize_initializer_plan } from './initializers';
 
 export async function compile(input: CompileInput): Promise<CompileOutput> {
   // 记时
@@ -31,7 +32,7 @@ export async function compile(input: CompileInput): Promise<CompileOutput> {
 
   const dsl: DSLType = result.data as DSLType;
 
-  // 先准备 zones_index（供 effect 校验使用）
+  // 先准备 zones_index（供 effect/initializer 校验使用）
   const zones_index = Object.fromEntries(
     dsl.zones.map(z => [
       z.id,
@@ -44,10 +45,13 @@ export async function compile(input: CompileInput): Promise<CompileOutput> {
       }
     ])
   );
+  const entities_index = Object.fromEntries(
+    dsl.entities.map(e => [e.id, { props: e.props ?? {} }])
+  );
 
   // 构建 actions_index（规范化 effect_pipeline + action_hash）
   // 初始化结果对象，类型就是编译产物里的 actions_index 结构
-const actions_index: CompiledSpecType['actions_index'] = {};
+  const actions_index: CompiledSpecType['actions_index'] = {};
   // 遍历 DSL 中的动作定义（容错：DSL 可能没有 actions 字段）
   for (const a of dsl.actions ?? []) {
     // 小工具：把 normalize_effect_pipeline 抛出的 issue，映射到具体的 action 路径上
@@ -84,6 +88,16 @@ const actions_index: CompiledSpecType['actions_index'] = {};
     };
   }
 
+  // 初始变量与计划
+  const seed_vars = { turn: 1, ...(dsl.state?.vars ?? {}) };
+  const seed_per_seat = dsl.state?.per_seat?.defaults ?? {};
+  const plan = normalize_initializer_plan(
+    dsl.setup ?? [],
+    zones_index,
+    entities_index,
+    (code, path, msg) => errors.push(issue(code, path, msg))
+  );
+
   // 编译产物
   /**
    *  - 考虑到运行时的高频查询希望做到 O(1), 所以 数组 -> 索引， 记录为 Record
@@ -100,16 +114,21 @@ const actions_index: CompiledSpecType['actions_index'] = {};
       name: dsl.name, 
       seats: dsl.metadata.seats 
     },
-    entities_index: Object.fromEntries(dsl.entities.map(e => [e.id, { props: e.props ?? {} }])),
+    entities_index,
     zones_index,
-    initializers: { 
-      plan: [], 
-      seed_vars: { turn: 1 } 
+    initializers: {
+      plan,
+      seed_vars,
+      seed_per_seat,
     },
-    phase_graph: { 
-      initial_phase: dsl.phases[0]?.id ?? "setup", 
-      nodes: dsl.phases.map(p => p.id), 
-      transitions: (dsl.phases.flatMap(p => (p.transitions ?? []).map(tr => ({ from: p.id, to: tr.to, when: tr.when })) )), turn_order: "clockwise" },
+    phase_graph: {
+      initial_phase: dsl.phases[0]?.id ?? "setup",
+      nodes: dsl.phases.map(p => p.id),
+      transitions: dsl.phases.flatMap(p =>
+        (p.transitions ?? []).map(tr => ({ from: p.id, to: tr.to, when: tr.when }))
+      ),
+      turn_order: "clockwise",
+    },
     actions_index,
     triggers_index: {},
     victory: { order: dsl.victory.order.map(o => ({ when: o.when, result: o.result })) },

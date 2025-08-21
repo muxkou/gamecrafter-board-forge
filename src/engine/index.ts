@@ -14,6 +14,7 @@ import { mulberry32 } from '../utils/rng.util';
 import { end_turn, move_top } from './actions';
 import { validate_state } from './validate';
 import { step_compiled } from './step_compiled';
+import { effectExecutors, type EffectOp } from './effects';
 
 /**
  * initial_state()
@@ -77,7 +78,7 @@ export async function initial_state(input: InitialStateInput): Promise<InitialSt
   );
 
   // 最小可用的 GameState 骨架
-  const game_state: GameState = {
+  let game_state: GameState = {
     // 从编译产物取初始阶段
     phase: input.compiled_spec.phase_graph.initial_phase,
     // 回合号（占位：默认 1；若需要从 seed_vars 中读取可后续调整）
@@ -94,7 +95,13 @@ export async function initial_state(input: InitialStateInput): Promise<InitialSt
 
     // 分席位变量：为每个 seat 建立对象，并套用 overrides.per_seat[seat] 覆盖
     per_seat: Object.fromEntries(
-      seats.map((s) => [s, { ...(input.overrides?.per_seat?.[s] ?? {}) }]),
+      seats.map((s) => [
+        s,
+        {
+          ...input.compiled_spec.initializers.seed_per_seat,
+          ...(input.overrides?.per_seat?.[s] ?? {}),
+        },
+      ]),
     ),
 
     // 实体/区域：模板占位（下一步会根据 zones_index 等执行真正初始化）
@@ -110,6 +117,17 @@ export async function initial_state(input: InitialStateInput): Promise<InitialSt
 
   // 初始化事件（占位一条 "setup"），方便回放/审计
   const init_events = [{ seq: 0, by: 'system', id: 'setup', payload: {}, ts_logical: 0 }];
+
+  // 根据 compiled_spec.initializers.plan 执行初始化指令
+  for (const op of input.compiled_spec.initializers.plan as EffectOp[]) {
+    const exec = effectExecutors[op.op as EffectOp['op']];
+    if (!exec) throw new Error(`unknown init op '${(op as any).op}'`);
+    game_state = exec(op as any, {
+      compiled: input.compiled_spec,
+      state: game_state,
+      call: { action: '@init', by: 'system', payload: {} },
+    });
+  }
 
   const v = validate_state(game_state);
   if (v.errors.length) {

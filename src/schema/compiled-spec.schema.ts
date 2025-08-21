@@ -25,10 +25,12 @@ export const CompiledSpec = z.object({
    * 初始化计划：
    * - plan：初始化指令序列（spawn/shuffle/deal/...）
    * - seed_vars：写入 game_state.vars 的初始变量
+   * - seed_per_seat：写入 game_state.per_seat[seat] 的初始变量
    */
   initializers: z.object({
     plan: z.array(z.any()),
     seed_vars: z.record(z.string(), z.any()),
+    seed_per_seat: z.record(z.string(), z.any()),
   }),
 
   /**

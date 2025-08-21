@@ -14,32 +14,42 @@ import { initial_state, step } from '../index';
  * 构造一个最小可用的有效 DSL，便于复用。
  */
 function buildValidDSL() {
-	return {
-		schema_version: 0,
-		engine_compat: '>=1.0.0',
-		id: 'demo',
-		name: 'Demo Game',
-		metadata: { seats: { min: 2, max: 4, default: 2 } },
-		entities: [
-			{ id: 'card', props: { cost: 1 } }
-		],
-		zones: [
-			{ id: 'deck', kind: 'stack', scope: 'per_seat', of: ['card'], visibility: 'owner', capacity: 60 },
-			{ id: 'hand', kind: 'list', scope: 'per_seat', of: ['card'], visibility: 'owner' },
-		],
-		phases: [
-			{ id: 'main', transitions: [] }
-		],
-		actions: [
-			{ id: 'draw', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', count: 1 } ] }
-		],
-		victory: { order: [ { when: true, result: 'ongoing' } ] },
-	};
+        return {
+                schema_version: 0,
+                engine_compat: '>=1.0.0',
+                id: 'demo',
+                name: 'Demo Game',
+                metadata: { seats: { min: 2, max: 4, default: 2 } },
+                entities: [
+                        { id: 'card', props: { cost: 1 } }
+                ],
+                zones: [
+                        { id: 'deck', kind: 'stack', scope: 'per_seat', of: ['card'], visibility: 'owner', capacity: 60 },
+                        { id: 'hand', kind: 'list', scope: 'per_seat', of: ['card'], visibility: 'owner' },
+                ],
+                phases: [
+                        { id: 'main', transitions: [] }
+                ],
+                actions: [
+                        { id: 'draw', effect: [ { op: 'move_top', from_zone: 'deck', to_zone: 'hand', count: 1 } ] }
+                ],
+                victory: { order: [ { when: true, result: 'ongoing' } ] },
+        };
+}
+
+function buildDSLWithSetup() {
+        const base: any = buildValidDSL();
+        base.setup = [
+                { op: 'spawn', entity: 'card', to_zone: 'deck', owner: 'seat', count: 5 },
+                { op: 'shuffle', zone: 'deck', owner: 'seat' },
+                { op: 'deal', from_zone: 'deck', to_zone: 'hand', from_owner: 'seat', to_owner: 'seat', count: 2 },
+        ];
+        return base;
 }
 
 describe('engine.initial_state', () => {
-	// 场景一：创建最小可用状态，校验骨架与 zones 形状
-	it('should create minimal state with zones and per-seat instances', async () => {
+        // 场景一：创建最小可用状态，校验骨架与 zones 形状
+        it('should create minimal state with zones and per-seat instances', async () => {
 		const dsl = buildValidDSL();
 		const compiled = await compile({ dsl });
 		expect(compiled.ok).toBe(true);
@@ -59,8 +69,22 @@ describe('engine.initial_state', () => {
 		// zones per-seat shape
 		expect(Object.keys(gs.zones.deck.instances).sort()).toEqual(['A','B']);
 		expect(Array.isArray(gs.zones.deck.instances['A'].items)).toBe(true);
-		expect(Array.isArray(gs.zones.hand.instances['A'].items)).toBe(true);
-	});
+                expect(Array.isArray(gs.zones.hand.instances['A'].items)).toBe(true);
+        });
+
+        // 场景二：执行 setup 计划初始化牌堆与手牌
+        it('should execute setup plan spawning and dealing cards', async () => {
+                const dsl = buildDSLWithSetup();
+                const compiled = await compile({ dsl });
+                expect(compiled.ok).toBe(true);
+                const seats = ['A', 'B'];
+                const init = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 7 });
+                const gs: any = init.game_state;
+                for (const s of seats) {
+                        expect(gs.zones.deck.instances[s].items.length).toBe(3);
+                        expect(gs.zones.hand.instances[s].items.length).toBe(2);
+                }
+        });
 });
 
 describe('engine.step', () => {
