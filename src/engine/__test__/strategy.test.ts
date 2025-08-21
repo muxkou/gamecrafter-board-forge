@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { compile } from '../compiler/index';
-import { initial_state } from './index';
-import { legal_actions_compiled } from './legal_actions_compiled';
-import { first_strategy, random_strategy } from './strategies';
-import type { Strategy } from './strategy';
+import { compile } from '../../compiler/index';
+import { initial_state } from '../index';
+import { legal_actions_compiled } from '../legal_actions_compiled';
+import { first_strategy, random_strategy } from '../strategies';
+import type { Strategy } from '../strategy';
 
 function buildDSL() {
   return {

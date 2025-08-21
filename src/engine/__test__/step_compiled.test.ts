@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 
-import { compile } from '../compiler/index';
-import { initial_state } from './index';
-import { step_compiled } from './step_compiled';
-import { legal_actions_compiled } from './legal_actions_compiled';
+import { compile } from '../../compiler/index';
+import { initial_state } from '../index';
+import { step_compiled } from '../step_compiled';
+import { legal_actions_compiled } from '../legal_actions_compiled';
 
 function dslWithActions() {
 	return {

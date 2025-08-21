@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { compile } from '../compiler/index';
-import { parallel_auto_runner } from './parallel_auto_runner';
-import { auto_runner } from './auto_runner';
+import { compile } from '../../compiler/index';
+import { parallel_auto_runner } from '../parallel_auto_runner';
+import { auto_runner } from '../auto_runner';
 
 function buildDSL() {
   return {

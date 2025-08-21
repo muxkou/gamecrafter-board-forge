@@ -7,8 +7,8 @@
  */
 import { describe, it, expect } from 'vitest';
 
-import { compile } from '../compiler/index';
-import { initial_state, step } from './index';
+import { compile } from '../../compiler/index';
+import { initial_state, step } from '../index';
 
 /**
  * 构造一个最小可用的有效 DSL，便于复用。
