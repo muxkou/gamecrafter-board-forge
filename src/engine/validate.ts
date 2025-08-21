@@ -33,8 +33,7 @@ export function validate_state(state: GameState) {
     const zr: any = (state.zones as any)[zone_id];
     for (const owner of Object.keys(zr.instances)) {
       const inst: any = zr.instances[owner];
-      const items: string[] =
-        "items" in inst && Array.isArray(inst.items) ? inst.items : [];
+      const items: string[] = "items" in inst && Array.isArray(inst.items) ? inst.items : [];
       items.forEach((eid, idx) => {
         if (!locMap.has(eid)) locMap.set(eid, []);
         locMap.get(eid)!.push({ zone: zone_id, owner, index: idx });
