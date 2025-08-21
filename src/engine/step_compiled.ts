@@ -5,6 +5,7 @@ import { validate_state } from './validate';
 import { effectExecutors, type EffectOp } from './effects';
 import type { CompiledActionCall, InterpreterCtx } from './effects/types';
 import { eval_condition } from './helpers/expr.util';
+import { run_triggers } from './triggers';
 import z from 'zod';
 
 // 与编译产物的 actions_index[key] 对齐的最小必要形状
@@ -90,6 +91,15 @@ export function step_compiled(args: {
     ctx.state = state;                 // 保持最新
     state = exec(op as any, ctx);
   }
+
+  // 主动作管线执行完毕后，运行对应触发器
+  state = run_triggers({
+    compiled_spec,
+    game_state: state,
+    trigger_key: `after:${call.action}`,
+    call,
+    context,
+  });
 
   // 不变量
   const v = validate_state(state);
