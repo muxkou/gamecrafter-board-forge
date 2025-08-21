@@ -205,7 +205,7 @@ export const DSL_Base = z.object({
 
 export type DSLType = z.infer<typeof DSL_Base>;
 
-// 显式标注 superRefine 入参为'输出类型”（可选，但能帮你抓歧义）
+// 显式标注 superRefine 入参为'输出类型”（可选，但能抓歧义）
 export const DSL = DSL_Base.superRefine((dsl: z.output<typeof DSL_Base>, ctx) => {
   // ✅ 用 dsl（值）而不是 DSL/DSLBase（schema）
   const entityIds = new Set(dsl.entities.map((e) => e.id));
