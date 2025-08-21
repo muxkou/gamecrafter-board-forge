@@ -153,6 +153,7 @@ function err(code: string, message: string, details?: unknown): EngineError {
 
 export async function step(input: StepInput): Promise<StepOutput> {
   const { game_state, action, compiled_spec, context } = input;
+  const phase_before = game_state.phase;
 
   // 校验 1：动作序号必须严格递增 1
   if (action.seq !== game_state.meta.last_seq + 1) {
@@ -176,10 +177,26 @@ export async function step(input: StepInput): Promise<StepOutput> {
     };
   }
 
+  // 校验 3：当前阶段是否允许该动作
+  if (compiled_spec) {
+    const candidates = compiled_spec.phase_graph.transitions.filter(
+      (t) => t.from === phase_before,
+    );
+    if (candidates.length && !candidates.some((t) => t.when === action.id)) {
+      return {
+        ok: false,
+        error: err('ILLEGAL_ACTION', 'not allowed in current phase', {
+          phase: phase_before,
+          action: action.id,
+        }),
+      };
+    }
+  }
+
   let next: GameState | EngineError | null = null;
 
   // 优先：若提供 compiled_spec，走解释器路径
-  if (compiled_spec) {
+  if (compiled_spec && (compiled_spec.actions_index as any)[action.id]) {
     try {
       const ctx: ReduceContext | undefined =
         compiled_spec.eval_limits || context?.eval_limits
@@ -221,7 +238,22 @@ export async function step(input: StepInput): Promise<StepOutput> {
       ts_logical: action.seq,
     };
 
-    const next_state = next as GameState;
+    let next_state = next as GameState;
+
+    if (compiled_spec) {
+      const tr = compiled_spec.phase_graph.transitions.find(
+        (t) => t.from === phase_before && t.when === action.id,
+      );
+      if (tr) {
+        const exec = effectExecutors['set_phase'];
+        next_state = exec({ op: 'set_phase', phase: tr.to } as any, {
+          compiled: compiled_spec,
+          state: next_state,
+          call: { action: action.id, by: action.by, payload: action.payload },
+        });
+      }
+    }
+
     const v = validate_state(next_state);
     if (v.errors.length) {
       return {

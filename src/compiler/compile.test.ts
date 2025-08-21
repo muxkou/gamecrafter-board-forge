@@ -112,6 +112,7 @@ describe('compile', () => {
                         { id: 'shuf', effect: [ { op: 'shuffle', zone: 'deck' } ] },
                         { id: 'deal', effect: [ { op: 'deal', from_zone: 'deck', to_zone: 'hand', to_owner: 'seat', count: 1 } ] },
                         { id: 'setv', effect: [ { op: 'set_var', key: 'foo', value: 42 } ] },
+                        { id: 'phase', effect: [ { op: 'set_phase', phase: 'main' } ] },
                 );
                 const result = await compile({ dsl });
                 expect(result.ok).toBe(true);
@@ -124,6 +125,9 @@ describe('compile', () => {
                 ]);
                 expect(compiled.actions_index['setv'].effect_pipeline).toEqual([
                         { op: 'set_var', key: 'foo', value: 42 }
+                ]);
+                expect(compiled.actions_index['phase'].effect_pipeline).toEqual([
+                        { op: 'set_phase', phase: 'main' }
                 ]);
         });
 });

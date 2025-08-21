@@ -47,6 +47,15 @@ function buildDSLWithSetup() {
         return base;
 }
 
+function buildDSLWithPhases() {
+        const base: any = buildValidDSL();
+        base.phases = [
+                { id: 'main', transitions: [ { to: 'night', when: 'end_turn' }, { to: 'main', when: 'draw' } ] },
+                { id: 'night', transitions: [ { to: 'main', when: 'end_turn' } ] },
+        ];
+        return base;
+}
+
 describe('engine.initial_state', () => {
         // 场景一：创建最小可用状态，校验骨架与 zones 形状
         it('should create minimal state with zones and per-seat instances', async () => {
@@ -181,5 +190,29 @@ expect(r.state_hash?.startsWith('sha256:')).toBe(true);
                 const ns: any = r.next_state!;
                 expect(ns.zones.deck.instances['A'].items).toEqual([]);
                 expect(ns.zones.hand.instances['A'].items).toEqual(['c1']);
+        });
+
+        // 场景八：非法阶段的动作应被拒绝
+        it('should reject actions not allowed in current phase', async () => {
+                const dsl = buildDSLWithPhases();
+                const compiled = await compile({ dsl });
+                const seats = ['A', 'B'];
+                const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+                const gs: any = base.game_state;
+                gs.phase = 'night';
+                const r = await step({ compiled_spec: compiled.compiled_spec!, game_state: gs, action: { id: 'draw', by: 'A', payload: {}, seq: 1 } });
+                expect(r.ok).toBe(false);
+                expect(r.error?.code).toBe('ILLEGAL_ACTION');
+        });
+
+        // 场景九：end_turn 应根据 phase_graph 切换阶段
+        it('should transition phase based on phase_graph', async () => {
+                const dsl = buildDSLWithPhases();
+                const compiled = await compile({ dsl });
+                const seats = ['A', 'B'];
+                const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+                const r = await step({ compiled_spec: compiled.compiled_spec!, game_state: base.game_state, action: { id: 'end_turn', by: 'A', payload: {}, seq: 1 } });
+                expect(r.ok).toBe(true);
+                expect(r.next_state?.phase).toBe('night');
         });
 });

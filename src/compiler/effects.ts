@@ -30,9 +30,19 @@ type SetVarNode = {
   value: unknown;
 };
 
-type EffectNode = MoveTopNode | ShuffleNode | DealNode | SetVarNode;
+type SetPhaseNode = {
+  op: 'set_phase';
+  phase: string;
+};
 
-const Supported_Effect_Op = ['move_top', 'shuffle', 'deal', 'set_var'];
+type EffectNode =
+  | MoveTopNode
+  | ShuffleNode
+  | DealNode
+  | SetVarNode
+  | SetPhaseNode;
+
+const Supported_Effect_Op = ['move_top', 'shuffle', 'deal', 'set_var', 'set_phase'];
 
 export function normalize_effect_pipeline(
   raw: unknown,
@@ -134,6 +144,14 @@ export function normalize_effect_pipeline(
         return null;
       }
       out.push({ op: 'set_var', key, value: node.value });
+    }
+    else if (node.op === 'set_phase') {
+      const phase = String(node.phase ?? "");
+      if (!phase) {
+        add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}`, 'phase is required');
+        return null;
+      }
+      out.push({ op: 'set_phase', phase });
     }
 
   }
