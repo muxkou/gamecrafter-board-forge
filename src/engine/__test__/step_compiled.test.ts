@@ -36,6 +36,28 @@ function dslWithActions() {
         };
 }
 
+function dslWithNewOps() {
+        return {
+                schema_version: 0,
+                engine_compat: '>=1.0.0',
+                id: 'demo2',
+                name: 'Demo2',
+                metadata: { seats: { min: 2, max: 2, default: 2 } },
+                entities: [ { id: 'card', props: {} } ],
+                zones: [
+                        { id: 'deck', kind: 'stack', scope: 'public', of: ['card'], visibility: 'all' },
+                        { id: 'hand', kind: 'list', scope: 'per_seat', of: ['card'], visibility: 'owner' },
+                ],
+                phases: [ { id: 'main', transitions: [] } ],
+                actions: [
+                        { id: 'shuffle_deck', effect: [ { op: 'shuffle', zone: 'deck', owner: '_' } ] },
+                        { id: 'deal_all', effect: [ { op: 'deal', from_zone: 'deck', to_zone: 'hand', from_owner: '_', to_owner: 'seat', count: 1 } ] },
+                        { id: 'set_score', effect: [ { op: 'set_var', key: 'score', value: 5 } ] },
+                ],
+                victory: { order: [ { when: true, result: 'ongoing' } ] },
+        };
+}
+
 async function buildCompiledAndInit() {
 	const compiled = await compile({ dsl: dslWithActions() });
 	expect(compiled.ok).toBe(true);
@@ -137,7 +159,51 @@ describe('step_compiled (interpreter)', () => {
 		const { next_state } = step_compiled({ compiled_spec, game_state: gs, action: call });
 		const n: any = next_state as any;
 		expect(n.zones.hand.instances['A'].items.length).toBe(1);
-	});
+        });
+});
+
+describe('new effect ops', () => {
+        async function build() {
+                const compiled = await compile({ dsl: dslWithNewOps() });
+                expect(compiled.ok).toBe(true);
+                const seats = ['A', 'B'];
+                const init = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+                return { compiled_spec: compiled.compiled_spec!, init, seats } as const;
+        }
+
+        it('executes shuffle deterministically', async () => {
+                const { compiled_spec, init } = await build();
+                const gs: any = init.game_state;
+                gs.zones.deck.instances['_'].items = ['c1','c2','c3'];
+                const { next_state } = step_compiled({ compiled_spec, game_state: gs, action: { action: 'shuffle_deck', by: 'A', payload: {} } });
+                const ns: any = next_state as any;
+                expect(ns.zones.deck.instances['_'].items).toEqual(['c1','c3','c2']);
+        });
+
+        it('executes deal to each seat', async () => {
+                const { compiled_spec, init } = await build();
+                const gs: any = init.game_state;
+                gs.zones.deck.instances['_'].items = ['c1','c2','c3'];
+                const { next_state } = step_compiled({ compiled_spec, game_state: gs, action: { action: 'deal_all', by: 'A', payload: {} } });
+                const ns: any = next_state as any;
+                expect(ns.zones.hand.instances['A'].items).toEqual(['c3']);
+                expect(ns.zones.hand.instances['B'].items).toEqual(['c2']);
+                expect(ns.zones.deck.instances['_'].items).toEqual(['c1']);
+        });
+
+        it('executes set_var updating globals', async () => {
+                const { compiled_spec, init } = await build();
+                const { next_state } = step_compiled({ compiled_spec, game_state: init.game_state, action: { action: 'set_score', by: 'A', payload: {} } });
+                expect(next_state.vars.score).toBe(5);
+        });
+
+        it('legal_actions_compiled includes new ops', async () => {
+                const { compiled_spec, init } = await build();
+                const calls = legal_actions_compiled({ compiled_spec: compiled_spec as any, game_state: init.game_state, by: 'A', seats: ['A','B'] });
+                expect(calls.some(c => c.action === 'shuffle_deck')).toBe(true);
+                expect(calls.some(c => c.action === 'deal_all')).toBe(true);
+                expect(calls.some(c => c.action === 'set_score')).toBe(true);
+        });
 });
 
 

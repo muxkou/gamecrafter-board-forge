@@ -5,7 +5,7 @@
  *       静态枚举“可能合法”的动作调用（ActionCall）。
  * 特点：
  *  - 轻量近似：仅分析首个 move_top 节点的资源/容量是否可行；不逐步模拟整条 pipeline。
- *  - 仅支持 move_top：若出现其他 op 则跳过该动作（可扩展）。
+ *  - 支持 shuffle/deal/set_var 等无资源消耗的 op；若 pipeline 无 move_top，则直接认为可行。
  *  - owner 解析：支持 'by' | 'active' | 'seat'（占位）以及常量 seat_id 字符串。
  *  - count 枚举：生成 1..max 的分支，可通过 maxCountsPerAction 限制规模。
  * 适用：提示 UI、简单 AI、可行性预估；对强一致性要求的合法性，仍需在 step/step_compiled 路径校验。
@@ -34,9 +34,11 @@ type MoveTopOp = {
   count?: number;
 };
 
+type EffectPipelineOp = { op: 'move_top' | 'shuffle' | 'deal' | 'set_var' } & Record<string, unknown>;
+
 type EffectDef = {
   action_hash: string;
-  effect_pipeline: MoveTopOp[]; // 当前仅支持 move_top 串行
+  effect_pipeline: EffectPipelineOp[]; // 混合多种 op
 };
 
 type ActionsIndex = Record<string, EffectDef>;
@@ -116,11 +118,18 @@ export function legal_actions_compiled(args: {
     const pipeline = def.effect_pipeline;
     if (!Array.isArray(pipeline) || pipeline.length === 0) continue;
 
-    // 仅支持 move_top 串行；如果出现其他 op，就跳过（未来可扩展）
-    if (pipeline.some(op => op.op !== 'move_top')) continue;
+    const supported = ['move_top', 'shuffle', 'deal', 'set_var'];
+    if (pipeline.some(op => !supported.includes(op.op))) continue;
 
-    // 目前仅对“首个 move_top”做可行性判断；若你需要严格，可逐步模拟验证（但更重）
-    const first = pipeline[0];
+    // 若 pipeline 不含 move_top，则直接认为可行（无资源校验）
+    const firstMove = pipeline.find(op => op.op === 'move_top') as MoveTopOp | undefined;
+    if (!firstMove) {
+      out.push({ action: name, by });
+      continue;
+    }
+
+    // 目前仅对首个 move_top 做可行性判断
+    const first = firstMove;
 
     const fromMeta = zones[first.from_zone];
     const toMeta   = zones[first.to_zone];
