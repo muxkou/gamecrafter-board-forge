@@ -89,11 +89,11 @@ describe('compile', () => {
 		expect(result.errors.some(e => e.code === 'SCHEMA_ERROR')).toBe(true);
 	});
 
-	// 场景三：effect 规范化失败，错误被收集且该 action 被跳过
-	it('should collect errors and skip invalid actions whose effect pipeline fails normalization', async () => {
-		const dsl = buildValidDSL();
-		// 注入一个结构错误的 action（缺失 from_zone）
-		dsl.actions.push({ id: 'bad', effect: [ { op: 'move_top', to_zone: 'hand' } ] } as any);
+        // 场景三：effect 规范化失败，错误被收集且该 action 被跳过
+        it('should collect errors and skip invalid actions whose effect pipeline fails normalization', async () => {
+                const dsl = buildValidDSL();
+                // 注入一个结构错误的 action（缺失 from_zone）
+                dsl.actions.push({ id: 'bad', effect: [ { op: 'move_top', to_zone: 'hand' } ] } as any);
 
 		const result = await compile({ dsl });
 		expect(result.ok).toBe(false);
@@ -102,8 +102,30 @@ describe('compile', () => {
 
 		const compiled = result.compiled_spec!;
 		expect(Object.keys(compiled.actions_index)).toContain('draw');
-		expect(Object.keys(compiled.actions_index)).not.toContain('bad');
-	});
+                expect(Object.keys(compiled.actions_index)).not.toContain('bad');
+        });
+
+        // 场景四：规范化新 effect op（shuffle/deal/set_var）
+        it('should normalize shuffle/deal/set_var ops', async () => {
+                const dsl = buildValidDSL();
+                dsl.actions.push(
+                        { id: 'shuf', effect: [ { op: 'shuffle', zone: 'deck' } ] },
+                        { id: 'deal', effect: [ { op: 'deal', from_zone: 'deck', to_zone: 'hand', to_owner: 'seat', count: 1 } ] },
+                        { id: 'setv', effect: [ { op: 'set_var', key: 'foo', value: 42 } ] },
+                );
+                const result = await compile({ dsl });
+                expect(result.ok).toBe(true);
+                const compiled = result.compiled_spec!;
+                expect(compiled.actions_index['shuf'].effect_pipeline).toEqual([
+                        { op: 'shuffle', zone: 'deck', owner: 'by' }
+                ]);
+                expect(compiled.actions_index['deal'].effect_pipeline).toEqual([
+                        { op: 'deal', from_zone: 'deck', to_zone: 'hand', from_owner: 'by', to_owner: 'seat', count: 1 }
+                ]);
+                expect(compiled.actions_index['setv'].effect_pipeline).toEqual([
+                        { op: 'set_var', key: 'foo', value: 42 }
+                ]);
+        });
 });
 
 
