@@ -31,6 +31,7 @@ type SpawnNode = {
   owner: 'seat' | 'by' | 'active' | string;
   count: number;
   props?: Record<string, unknown>;
+  pos?: { x: number; y: number };
 };
 
 type DestroyNode = {
@@ -51,6 +52,14 @@ type SetPhaseNode = {
   phase: string;
 };
 
+type MovePieceNode = {
+  op: 'move_piece';
+  zone: string;
+  owner: 'by' | 'active' | string;
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+};
+
 type EffectNode =
   | MoveTopNode
   | ShuffleNode
@@ -58,8 +67,9 @@ type EffectNode =
   | SpawnNode
   | DestroyNode
   | SetVarNode
-  | SetPhaseNode;
-const Supported_Effect_Op = ['move_top', 'shuffle', 'deal', 'spawn', 'destroy', 'set_var', 'set_phase'];
+  | SetPhaseNode
+  | MovePieceNode;
+const Supported_Effect_Op = ['move_top', 'shuffle', 'deal', 'spawn', 'destroy', 'set_var', 'set_phase', 'move_piece'];
 
 export function normalize_effect_pipeline(
   raw: unknown,
@@ -175,7 +185,25 @@ export function normalize_effect_pipeline(
       if (!entities_index[entity])
         add_issue('REF_NOT_FOUND', `/actions/*/effect/${i}/entity`, `entity '${entity}' not found`);
 
-      out.push({ op: 'spawn', entity, to_zone, owner, count, props: node.props });
+      const boardKinds = ['grid', 'hexgrid', 'track'];
+      if (z && boardKinds.includes(z.kind)) {
+        const pos = { x: Number(node.pos?.x), y: Number(node.pos?.y) };
+        if (!Number.isInteger(pos.x) || !Number.isInteger(pos.y)) {
+          add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}/pos`, 'pos {x,y} required for board spawn');
+          return null;
+        }
+        if (count !== 1) {
+          add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}/count`, 'board spawn count must be 1');
+          return null;
+        }
+        out.push({ op: 'spawn', entity, to_zone, owner, count, props: node.props, pos });
+      } else {
+        if (node.pos) {
+          add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}/pos`, 'pos only for board zones');
+          return null;
+        }
+        out.push({ op: 'spawn', entity, to_zone, owner, count, props: node.props });
+      }
     }
     else if (node.op === 'destroy') {
       const from_zone = String(node.from_zone ?? '');
@@ -195,6 +223,30 @@ export function normalize_effect_pipeline(
       if (!z) add_issue('REF_NOT_FOUND', `/actions/*/effect/${i}/from_zone`, `zone '${from_zone}' not found`);
 
       out.push({ op: 'destroy', from_zone, owner, count });
+    }
+    else if (node.op === 'move_piece') {
+      const zone = String(node.zone ?? '');
+      const owner = (node.owner ?? 'by') as MovePieceNode['owner'];
+      const from = { x: Number(node.from?.x), y: Number(node.from?.y) };
+      const to = { x: Number(node.to?.x), y: Number(node.to?.y) };
+
+      if (!zone) {
+        add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}`, 'zone is required');
+        return null;
+      }
+      if (!Number.isInteger(from.x) || !Number.isInteger(from.y) || !Number.isInteger(to.x) || !Number.isInteger(to.y)) {
+        add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}/from`, 'from/to must be {x,y} integers');
+        return null;
+      }
+
+      const z = zones_index[zone];
+      if (!z) add_issue('REF_NOT_FOUND', `/actions/*/effect/${i}/zone`, `zone '${zone}' not found`);
+      const boardKinds = ['grid', 'hexgrid', 'track'];
+      if (z && !boardKinds.includes(z.kind)) {
+        add_issue('KIND_UNSUPPORTED', `/actions/*/effect/${i}/zone`, `kind '${z.kind}' not supported by move_piece`);
+      }
+
+      out.push({ op: 'move_piece', zone, owner, from, to });
     }
     else if (node.op === 'set_var') {
       const key = String(node.key ?? "");
