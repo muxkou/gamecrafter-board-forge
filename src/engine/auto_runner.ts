@@ -3,7 +3,7 @@
  * 在给定规则与策略下批量模拟对局，产出胜负/平局、步数、
  * 无法行动次数、策略违规次数、命中统计与可选事件轨迹等。
  */
-import { initial_state, step } from './index';
+import { initial_state, step, eval_victory } from './index';
 import type { CompiledSpecType } from '../schema';
 import type { GameState, Event } from '../types';
 import { ActionCall, CompiledLike, legal_actions_compiled } from './legal_actions_compiled';
@@ -49,25 +49,6 @@ export interface AutoRunnerSummary {
   trajectories?: Event[][];
 }
 
-/**
- * 评估胜负：按 `compiled_spec.victory.order` 顺序判定，
- * 命中则返回对应结果并记录分支；否则返回 'ongoing'。
- */
-function eval_victory(compiled_spec: CompiledSpecType, state: GameState, hit?: (key: string) => void): string {
-  const chain = compiled_spec.victory?.order || [];
-  for (const { when, result } of chain) {
-    // DSL 可能将条件编译为 { const: boolean }
-    const cond = typeof when === 'object' && when !== null && 'const' in (when as any)
-      ? (when as any).const
-      : when;
-    if (cond) {
-      hit?.(String(result));
-      return result;
-    }
-  }
-  hit?.('ongoing');
-  return 'ongoing';
-}
 
 /**
  * 为指定席位选择策略：

@@ -151,6 +151,31 @@ function err(code: string, message: string, details?: unknown): EngineError {
   return { code, message, details };
 }
 
+/**
+ * 评估胜负：按 `compiled_spec.victory.order` 顺序判定，
+ * 命中则返回对应结果；否则返回 'ongoing'。
+ * 可选传入 hit 以记录命中分支。
+ */
+export function eval_victory(
+  compiled_spec: CompiledSpecType,
+  state: GameState,
+  hit?: (key: string) => void,
+): string {
+  const chain = compiled_spec.victory?.order || [];
+  for (const { when, result } of chain) {
+    const cond =
+      typeof when === 'object' && when !== null && 'const' in (when as any)
+        ? (when as any).const
+        : when;
+    if (cond) {
+      hit?.(String(result));
+      return result;
+    }
+  }
+  hit?.('ongoing');
+  return 'ongoing';
+}
+
 export async function step(input: StepInput): Promise<StepOutput> {
   const { game_state, action, compiled_spec, context } = input;
   const phase_before = game_state.phase;
@@ -269,7 +294,15 @@ export async function step(input: StepInput): Promise<StepOutput> {
     } as GameState;
     const state_hash = hash_sha256(canonical_stringify(next_for_hash));
 
-    return { ok: true, next_state, event: ev, state_hash };
+    let victory: string | undefined;
+    if (compiled_spec) {
+      const vr = eval_victory(compiled_spec, next_state);
+      if (vr !== 'ongoing') victory = vr;
+    }
+
+    const out: StepOutput = { ok: true, next_state, event: ev, state_hash };
+    if (victory) out.victory = victory;
+    return out;
   }
 
   // 未实现的动作 → 统一报错
