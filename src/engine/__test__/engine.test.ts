@@ -97,6 +97,29 @@ describe('engine.initial_state', () => {
 });
 
 describe('engine.step', () => {
+        // 场景一：若达成终局应在 StepOutput 返回 victory
+        it('should return victory result when game ends', async () => {
+                const dsl = {
+                        schema_version: 0,
+                        engine_compat: '>=1.0.0',
+                        id: 'demo',
+                        name: 'Demo Game',
+                        metadata: { seats: { min: 2, max: 2, default: 2 } },
+                        entities: [],
+                        zones: [],
+                        phases: [ { id: 'main', transitions: [] } ],
+                        actions: [ { id: 'noop', effect: [] } ],
+                        victory: { order: [ { when: true, result: 'win' } ] },
+                } as const;
+                const compiled = await compile({ dsl });
+                expect(compiled.ok).toBe(true);
+                const seats = ['A','B'];
+                const base = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
+                const r = await step({ compiled_spec: compiled.compiled_spec!, game_state: base.game_state, action: { id: 'noop', by: 'A', payload: {}, seq: 1 } });
+                expect(r.ok).toBe(true);
+                expect(r.victory).toBe('win');
+        });
+
 // 场景二：end_turn 推进席位并在未环回时不自增回合
 it('end_turn should advance active seat and keep turn unless wrapped (compiled fallback path)', async () => {
 const dsl = buildValidDSL();

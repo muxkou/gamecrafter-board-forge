@@ -65,4 +65,6 @@ export interface StepOutput {
    * 失败时可为空（实现也可选择回传当前 state 的哈希，非必需）。
    */
   state_hash?: string;
+  /** 游戏胜负结果（若非 ongoing 则返回，如 'win'/'loss'/'tie'） */
+  victory?: string;
 }
