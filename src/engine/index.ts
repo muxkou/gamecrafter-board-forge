@@ -136,15 +136,11 @@ function err(code: string, message: string, details?: unknown): EngineError {
 export async function step(input: StepInput): Promise<StepOutput> {
   const { game_state, action, compiled_spec, context } = input;
 
-  // 校验 1：动作序号必须严格递增
-  /**
-   * TODO:
-   * 是否需要更严格的验证: === last_seq + 1
-   */
-  if (action.seq <= game_state.meta.last_seq) {
+  // 校验 1：动作序号必须严格递增 1
+  if (action.seq !== game_state.meta.last_seq + 1) {
     return {
       ok: false,
-      error: err('DUPLICATE_SEQ', 'seq must be strictly increasing', {
+      error: err('DUPLICATE_SEQ', '必须严格递增 1', {
         last_seq: game_state.meta.last_seq,
         got: action.seq,
       }),
