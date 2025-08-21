@@ -1,11 +1,19 @@
-import { CompiledSpecType } from "../schema";
-import { StepInput, StepOutput, EngineError, Event, GameState, InitialStateInput, InitialStateOutput, ReduceContext } from "../types";
-import { canonical_stringify, hash_sha256 } from "../utils/canonical.util";
-import { mulberry32 } from "../utils/rng.util";
-import { end_turn, move_top } from "./actions";
-import { validate_state } from "./validate";
-import { step_compiled } from "./step_compiled";
-
+import { CompiledSpecType } from '../schema';
+import {
+  StepInput,
+  StepOutput,
+  EngineError,
+  Event,
+  GameState,
+  InitialStateInput,
+  InitialStateOutput,
+  ReduceContext,
+} from '../types';
+import { canonical_stringify, hash_sha256 } from '../utils/canonical.util';
+import { mulberry32 } from '../utils/rng.util';
+import { end_turn, move_top } from './actions';
+import { validate_state } from './validate';
+import { step_compiled } from './step_compiled';
 
 /**
  * initial_state()
@@ -17,7 +25,7 @@ import { step_compiled } from "./step_compiled";
  *  - 占位实现：zones/entities 等具体初始化留待后续通过 compiled_spec.initializers.plan 重放。
  */
 export async function initial_state(input: InitialStateInput): Promise<InitialStateOutput> {
-  // 逻辑时间/创建时间（秒级）。注意：meta.created_at 不参与 spec_id，但参与 state_hash。
+  // 逻辑时间/创建时间（秒级）。注意：meta.created_at 不参与 spec_id，也不参与 state_hash。
   const now = Math.floor(Date.now() / 1000);
 
   // 席位列表与 RNG 初始化（mulberry32 的状态使用 uint32 规范化）
@@ -27,20 +35,19 @@ export async function initial_state(input: InitialStateInput): Promise<InitialSt
   const zones_index = input.compiled_spec.zones_index as CompiledSpecType['zones_index'];
 
   // owner_key 规则：public → "_"；per_seat → 每个 seat_id
-  const owner_keys_for = (scope: "public"|"per_seat") =>
-    scope === "public" ? ["_"] : seats;
+  const owner_keys_for = (scope: 'public' | 'per_seat') => (scope === 'public' ? ['_'] : seats);
 
   // 给不同 kind 先建一个空实例（后续 grid/hexgrid/track 再细化）
   const empty_instance_for = (kind: string) => {
     switch (kind) {
-      case "list":
-      case "stack":
-      case "queue":
-      case "set":
+      case 'list':
+      case 'stack':
+      case 'queue':
+      case 'set':
         return { kind, items: [] as string[] };
-      case "grid":
-      case "hexgrid":
-      case "track":
+      case 'grid':
+      case 'hexgrid':
+      case 'track':
       default:
         // 先占位
         return { kind, cells: [] as string[][] };
@@ -49,22 +56,24 @@ export async function initial_state(input: InitialStateInput): Promise<InitialSt
 
   // 为了状态哈希稳定，按 zone_id 升序初始化
   const zones_runtime = Object.fromEntries(
-    Object.keys(zones_index).sort().map((zone_id) => {
-      const z = zones_index[zone_id];
-      const instances = Object.fromEntries(
-        owner_keys_for(z.scope).map((owner) => [owner, empty_instance_for(z.kind)])
-      );
-      return [
-        zone_id,
-        {
-          kind: z.kind,
-          scope: z.scope,
-          of: z.of,
-          capacity: z.capacity,
-          instances, // { "_": {...} } 或 { "s1": {...}, "s2": {...} }
-        },
-      ];
-    })
+    Object.keys(zones_index)
+      .sort()
+      .map((zone_id) => {
+        const z = zones_index[zone_id];
+        const instances = Object.fromEntries(
+          owner_keys_for(z.scope).map((owner) => [owner, empty_instance_for(z.kind)]),
+        );
+        return [
+          zone_id,
+          {
+            kind: z.kind,
+            scope: z.scope,
+            of: z.of,
+            capacity: z.capacity,
+            instances, // { "_": {...} } 或 { "s1": {...}, "s2": {...} }
+          },
+        ];
+      }),
   );
 
   // 最小可用的 GameState 骨架
@@ -79,13 +88,13 @@ export async function initial_state(input: InitialStateInput): Promise<InitialSt
 
     // 全局变量：先合并 compiled_spec.initializers.seed_vars，再用 overrides.vars 覆盖
     vars: {
-      ...(input.compiled_spec.initializers.seed_vars),
-      ...(input.overrides?.vars ?? {})
+      ...input.compiled_spec.initializers.seed_vars,
+      ...(input.overrides?.vars ?? {}),
     },
 
     // 分席位变量：为每个 seat 建立对象，并套用 overrides.per_seat[seat] 覆盖
     per_seat: Object.fromEntries(
-      seats.map(s => [s, { ...(input.overrides?.per_seat?.[s] ?? {}) }])
+      seats.map((s) => [s, { ...(input.overrides?.per_seat?.[s] ?? {}) }]),
     ),
 
     // 实体/区域：模板占位（下一步会根据 zones_index 等执行真正初始化）
@@ -96,13 +105,11 @@ export async function initial_state(input: InitialStateInput): Promise<InitialSt
     rng_state: String(rng.state >>> 0),
 
     // 元信息：包含 schema 版本、创建时间与最后动作序号
-    meta: { schema_version: 1, created_at: now, last_seq: 0 }
+    meta: { schema_version: 1, created_at: now, last_seq: 0 },
   };
 
   // 初始化事件（占位一条 "setup"），方便回放/审计
-  const init_events = [
-    { seq: 0, by: "system", id: "setup", payload: {}, ts_logical: 0 }
-  ];
+  const init_events = [{ seq: 0, by: 'system', id: 'setup', payload: {}, ts_logical: 0 }];
 
   const v = validate_state(game_state);
   if (v.errors.length) {
@@ -111,12 +118,12 @@ export async function initial_state(input: InitialStateInput): Promise<InitialSt
   }
 
   // 计算初始状态哈希：用于一致性校验与回放锚点
-  /**
-   * TODO: - 当前用 Date.now() 写入 meta.created_at，且参与 state_hash。这与注释“纯函数/只受入参决定”以及“所有随机只来自 seed”冲突。
- * 考虑在 hash 计算时 去掉 created_at
- * canonical_stringify({ ...game_state, created_at: undefined })
- */
-  const state_hash = hash_sha256(canonical_stringify(game_state));
+  // 在哈希计算前移除 meta.created_at，以保持与时间无关的确定性
+  const game_state_for_hash = {
+    ...game_state,
+    meta: { ...game_state.meta, created_at: undefined },
+  };
+  const state_hash = hash_sha256(canonical_stringify(game_state_for_hash));
 
   return { game_state, init_events, state_hash };
 }
@@ -131,27 +138,27 @@ export async function step(input: StepInput): Promise<StepOutput> {
 
   // 校验 1：动作序号必须严格递增
   /**
-   * TODO: 
+   * TODO:
    * 是否需要更严格的验证: === last_seq + 1
    */
   if (action.seq <= game_state.meta.last_seq) {
     return {
       ok: false,
-      error: err("DUPLICATE_SEQ", "seq must be strictly increasing", {
+      error: err('DUPLICATE_SEQ', 'seq must be strictly increasing', {
         last_seq: game_state.meta.last_seq,
-        got: action.seq
-      })
+        got: action.seq,
+      }),
     };
   }
 
   // 校验 2：行动者必须是当前席位（系统动作除外）
-  if (action.by !== "system" && action.by !== game_state.active_seat) {
+  if (action.by !== 'system' && action.by !== game_state.active_seat) {
     return {
       ok: false,
-      error: err("ILLEGAL_ACTION", "not active seat", {
+      error: err('ILLEGAL_ACTION', 'not active seat', {
         expected: game_state.active_seat,
-        actual: action.by
-      })
+        actual: action.by,
+      }),
     };
   }
 
@@ -172,7 +179,7 @@ export async function step(input: StepInput): Promise<StepOutput> {
       } as any);
       next = { ...next_state, meta: { ...next_state.meta, last_seq: action.seq } };
     } catch (e: any) {
-      return { ok: false, error: err("COMPILED_EXEC_ERROR", e?.message ?? String(e)) };
+      return { ok: false, error: err('COMPILED_EXEC_ERROR', e?.message ?? String(e)) };
     }
   } else {
     // 兼容路径：硬编码分发
@@ -188,7 +195,7 @@ export async function step(input: StepInput): Promise<StepOutput> {
       // 判断为 EngineError
       return {
         ok: false,
-        error: next as EngineError
+        error: next as EngineError,
       };
     }
 
@@ -197,14 +204,14 @@ export async function step(input: StepInput): Promise<StepOutput> {
       by: action.by,
       id: action.id,
       payload: action.payload,
-      ts_logical: action.seq
+      ts_logical: action.seq,
     };
 
     const v = validate_state(next as GameState);
     if (v.errors.length) {
       return {
         ok: false,
-        error: err("INVARIANT_FAILED", "state invariants violated", { errors: v.errors })
+        error: err('INVARIANT_FAILED', 'state invariants violated', { errors: v.errors }),
       };
     }
 
@@ -217,7 +224,7 @@ export async function step(input: StepInput): Promise<StepOutput> {
   // 未实现的动作 → 统一报错
   return {
     ok: false,
-    error: err("UNKNOWN_ACTION", `action '${action.id}' not implemented`)
+    error: err('UNKNOWN_ACTION', `action '${action.id}' not implemented`),
   };
 }
 
