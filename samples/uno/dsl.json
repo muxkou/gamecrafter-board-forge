@@ -1,0 +1,94 @@
+{
+  "schema_version": 0,
+  "engine_compat": ">=1.0.0",
+  "id": "uno",
+  "name": "Uno",
+  "metadata": {
+    "author": "muxkou",
+    "seats": {
+      "min": 2,
+      "max": 4,
+      "default": 4
+    }
+  },
+  "entities": [
+    { "id": "red-1", "props": { "coust": 2 }, "type": "card" },
+    { "id": "red-3", "props": { "coust": 2 }, "type": "card" },
+    { "id": "red-2", "props": { "coust": 2 }, "type": "card" },
+    { "id": "red-4", "props": { "coust": 2 }, "type": "card" },
+    { "id": "red-5", "props": { "coust": 2 }, "type": "card" },
+    { "id": "red-6", "props": { "coust": 2 }, "type": "card" },
+    { "id": "red-7", "props": { "coust": 2 }, "type": "card" },
+    { "id": "red-8", "props": { "coust": 2 }, "type": "card" },
+    { "id": "red-9", "props": { "coust": 2 }, "type": "card" },
+    { "id": "red-0", "props": { "coust": 1 }, "type": "card" },
+
+    { "id": "blue-1", "props": { "coust": 2 }, "type": "card" },
+    { "id": "blue-2", "props": { "coust": 2 }, "type": "card" },
+    { "id": "blue-3", "props": { "coust": 2 }, "type": "card" },
+    { "id": "blue-4", "props": { "coust": 2 }, "type": "card" },
+    { "id": "blue-5", "props": { "coust": 2 }, "type": "card" },
+    { "id": "blue-6", "props": { "coust": 2 }, "type": "card" },
+    { "id": "blue-7", "props": { "coust": 2 }, "type": "card" },
+    { "id": "blue-8", "props": { "coust": 2 }, "type": "card" },
+    { "id": "blue-9", "props": { "coust": 2 }, "type": "card" },
+    { "id": "blue-0", "props": { "coust": 1 }, "type": "card" },
+
+    { "id": "green-1", "props": { "coust": 2 }, "type": "card" },
+    { "id": "green-2", "props": { "coust": 2 }, "type": "card" },
+    { "id": "green-3", "props": { "coust": 2 }, "type": "card" },
+    { "id": "green-4", "props": { "coust": 2 }, "type": "card" },
+    { "id": "green-5", "props": { "coust": 2 }, "type": "card" },
+    { "id": "green-6", "props": { "coust": 2 }, "type": "card" },
+    { "id": "green-7", "props": { "coust": 2 }, "type": "card" },
+    { "id": "green-8", "props": { "coust": 2 }, "type": "card" },
+    { "id": "green-9", "props": { "coust": 2 }, "type": "card" },
+    { "id": "green-0", "props": { "coust": 1 }, "type": "card" },
+
+    { "id": "yellow-1", "props": { "coust": 2 }, "type": "card" },
+    { "id": "yellow-2", "props": { "coust": 2 }, "type": "card" },
+    { "id": "yellow-3", "props": { "coust": 2 }, "type": "card" },
+    { "id": "yellow-4", "props": { "coust": 2 }, "type": "card" },
+    { "id": "yellow-5", "props": { "coust": 2 }, "type": "card" },
+    { "id": "yellow-6", "props": { "coust": 2 }, "type": "card" },
+    { "id": "yellow-7", "props": { "coust": 2 }, "type": "card" },
+    { "id": "yellow-8", "props": { "coust": 2 }, "type": "card" },
+    { "id": "yellow-9", "props": { "coust": 2 }, "type": "card" },
+    { "id": "yellow-0", "props": { "coust": 1 }, "type": "card" }
+  ],
+  "zones": [
+    {
+      "id": "pool",
+      "kind": "stack",
+      "scope": "public",
+      "of_types": ["card"],
+      "visibility": "all"
+    },
+    {
+      "id": "discard_pile",
+      "kind": "set",
+      "scope": "public",
+      "of_types": ["card"],
+      "visibility": "all"
+    },
+    {
+      "id": "hand",
+      "kind": "set",
+      "scope": "per_seat",
+      "of_types": ["card"],
+      "visibility": "owner"
+    },
+    {
+      "id": "table",
+      "kind": "stack",
+      "scope": "public",
+      "of_types": ["card"],
+      "visibility": "none"
+    }
+  ],
+  "phases": [],
+  "actions": [],
+  "victory": {
+    "order": []
+  }
+}

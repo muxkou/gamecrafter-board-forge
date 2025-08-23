@@ -30,6 +30,8 @@ const DSL_Metadata_Seats = z.object({
 const DSL_Entity = z.object({
   /** 实体类型 ID（唯一） */
   id: z.string(),
+  /** 实体类型 */
+  type: z.string().optional(),
   /** 属性字典（此处放宽为 any；后续 compiler 可细化类型系统） */
   props: z.record(z.string(), z.any()),
 });
@@ -60,7 +62,8 @@ const DSL_Zone = z.object({
   scope: z.enum(['public', 'per_seat']),
 
   /** 该区域允许容纳的实体类型（必须与 entities[].id 对齐） */
-  of: z.array(z.string()),
+  of: z.array(z.string()).optional(),
+  of_types: z.array(z.string()).optional(),
 
   /**
    * 可见性：
@@ -208,18 +211,20 @@ export type DSLType = z.infer<typeof DSL_Base>;
 // 显式标注 superRefine 入参为'输出类型”（可选，但能抓歧义）
 export const DSL = DSL_Base.superRefine((dsl: z.output<typeof DSL_Base>, ctx) => {
   // ✅ 用 dsl（值）而不是 DSL/DSLBase（schema）
-  const entityIds = new Set(dsl.entities.map((e) => e.id));
+  const entity_ids = new Set(dsl.entities.map((e) => e.id));
 
   dsl.zones.forEach((zone, zi) => {
-    zone.of.forEach((eid: string, oi: number) => {
-      if (!entityIds.has(eid)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `区域 '${zone.id}' 引用了不存在的实体类型 '${eid}'`,
-          path: ['zones', zi, 'of', oi],
-        });
-      }
-    });
+    if (zone.of) {
+      zone.of.forEach((eid: string, oi: number) => {
+        if (!entity_ids.has(eid)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `区域 '${zone.id}' 引用了不存在的实体类型 '${eid}'`,
+            path: ['zones', zi, 'of', oi],
+          });
+        }
+      });
+    }
   });
 });
 

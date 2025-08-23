@@ -1,0 +1,42 @@
+{
+  "game_state": {
+    "phase": "setup",
+    "turn": 1,
+    "seats": ["A", "B", "C", "D"],
+    "active_seat": "A",
+    "vars": { "turn": 1 },
+    "per_seat": { "A": {}, "B": {}, "C": {}, "D": {} },
+    "entities": {},
+    "zones": {
+      "discard_pile": {
+        "kind": "set",
+        "scope": "public",
+        "instances": { "_": { "kind": "set", "items": [] } }
+      },
+      "hand": {
+        "kind": "set",
+        "scope": "per_seat",
+        "instances": {
+          "A": { "kind": "set", "items": [] },
+          "B": { "kind": "set", "items": [] },
+          "C": { "kind": "set", "items": [] },
+          "D": { "kind": "set", "items": [] }
+        }
+      },
+      "pool": {
+        "kind": "stack",
+        "scope": "public",
+        "instances": { "_": { "kind": "stack", "items": [] } }
+      },
+      "table": {
+        "kind": "stack",
+        "scope": "public",
+        "instances": { "_": { "kind": "stack", "items": [] } }
+      }
+    },
+    "rng_state": "42",
+    "meta": { "schema_version": 1, "created_at": 1755946886, "last_seq": 0, "next_eid": 1 }
+  },
+  "init_events": [{ "seq": 0, "by": "system", "id": "setup", "payload": {}, "ts_logical": 0 }],
+  "state_hash": "sha256:f245c78e78810a57459f59ba1b99e8b49042d17aa59b741c45fe869dbefb82b3"
+}
