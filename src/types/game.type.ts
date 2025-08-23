@@ -27,7 +27,7 @@ export interface Action {
   // 发起方（系统/玩家/模拟器）。
   by: string | "system"; 
   // 动作参数（仅包含 ID/索引/标量，不允许随机种子/时间）。
-  payload: unknown; 
+  payload: any; 
   // 去重序号
   seq: number; 
   // 便于调试（如策略名、测试用例编号），不影响确定性。[可选]

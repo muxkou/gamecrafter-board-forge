@@ -18,6 +18,8 @@
     "dist"
   ],
   "scripts": {
+    "cli:dev": "tsx src/cli/index.ts",
+    "---": "===================================",
     "clean": "rimraf dist",
     "build": "tsup",
     "rebuild": "rimraf dist && tsup",
@@ -49,6 +51,7 @@
     "rimraf": "^5.0.0",
     "ts-node": "10.9.2",
     "tsup": "^8.5.0",
+    "tsx": "^4.20.4",
     "typescript": "^5.9.0",
     "vitest": "^3.2.4"
   },

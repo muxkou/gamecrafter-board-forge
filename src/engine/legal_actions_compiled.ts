@@ -172,8 +172,8 @@ export function legal_actions_compiled(args: {
             op.to_owner === "seat"
               ? s
               : resolveOwner(op.to_owner, by, game_state, seat);
-          const fromKey = inst_key(fromMeta, fromOwner);
-          const toKey = inst_key(toMeta, toOwner);
+          const fromKey = inst_key(fromMeta, fromOwner || '');
+          const toKey = inst_key(toMeta, toOwner || '');
           if (op.from_zone === op.to_zone && fromKey === toKey) continue;
           const src = read(temp, op.from_zone, fromKey);
           const dest = read(temp, op.to_zone, toKey);

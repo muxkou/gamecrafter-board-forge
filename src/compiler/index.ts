@@ -55,7 +55,7 @@ export async function compile(input: CompileInput): Promise<CompileOutput> {
   // 遍历 DSL 中的动作定义（容错：DSL 可能没有 actions 字段）
   for (const a of dsl.actions ?? []) {
     // 小工具：把 normalize_effect_pipeline 抛出的 issue，映射到具体的 action 路径上
-    const addIssue = (code: string, path: string, message: string) => {
+    const add_issue = (code: string, path: string, message: string) => {
       // normalize_effect_pipeline 可能用 '/actions/*/xxx' 这样的占位路径
       // 这里把 '*' 替换成具体的 action id，并推入 errors
       errors.push(
@@ -69,11 +69,11 @@ export async function compile(input: CompileInput): Promise<CompileOutput> {
       a.effect ?? [],          // 没写 effect 就当空管线
       zones_index,
       entities_index,
-      addIssue
+      add_issue
     );
 
     if (!pipeline) {
-      // 规范化失败，errors 已经通过 addIssue 记录；这个 action 被跳过
+      // 规范化失败，errors 已经通过 add_issue 记录；这个 action 被跳过
       continue;
     }
 
@@ -92,6 +92,7 @@ export async function compile(input: CompileInput): Promise<CompileOutput> {
   // 初始变量与计划
   const seed_vars = { turn: 1, ...(dsl.state?.vars ?? {}) };
   const seed_per_seat = dsl.state?.per_seat?.defaults ?? {};
+  
   const plan = normalize_initializer_plan(
     dsl.setup ?? [],
     zones_index,
