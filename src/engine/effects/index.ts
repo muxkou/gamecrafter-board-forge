@@ -18,7 +18,7 @@ export type EffectOp =
   | SetPhaseOp
   | MovePieceOp;
 
-export const effectExecutors: Record<EffectOp['op'], EffectExecutor<any>> = {
+export const effect_executors: Record<EffectOp['op'], EffectExecutor<any>> = {
   move_top: exec_move_top,
   shuffle: exec_shuffle,
   deal: exec_deal,

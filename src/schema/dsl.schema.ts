@@ -191,7 +191,7 @@ export const DSL_Base = z.object({
   state: DSL_State.optional(),
 
   /** 早期/扩展用的 setup 字段（占位，允许任何形状；最终应编译成 plan） */
-  setup: z.any().optional(),
+  setup: z.array(z.any()).optional(),
 
   /** 阶段机定义： */
   phases: DSL_Phases,

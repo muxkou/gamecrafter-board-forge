@@ -75,23 +75,41 @@ export function normalize_initializer_plan(
       case 'spawn': {
         const to_zone = req_string(node.to_zone);
         const entity = req_string(node.entity);
+        const entity_type = req_string(node.entity_type);
         const owner = (node.owner ?? 'seat') as InitSpawn['owner'];
-        const count = node.count == null ? 1 : Number(node.count);
 
-        if (!to_zone || !entity) {
-          add_issue(ERR.SCHEMA, base_path, 'to_zone and entity are required');
+        if (!to_zone || (!entity && !entity_type)) {
+          add_issue(ERR.SCHEMA, base_path, 'to_zone and (entity or entity_type) are required');
           break;
         }
 
         assert_zone_exists(zones_index, to_zone, `${base_path}/to_zone`, add_issue);
-        if (!entities_index[entity]) {
-          add_issue(ERR.REF, `${base_path}/entity`, `entity '${entity}' not found`);
-        }
-        if (!is_positive_int(count)) {
-          add_issue(ERR.SCHEMA, `${base_path}/count`, 'count must be positive integer');
+
+        // 如果设置了 entity 优先通过 entity id 来获取实体
+        if (entity) {
+          // 此时 count 默认为 1
+          const count = node.count == null ? 1 : Number(node.count);
+
+          if (!entities_index[entity]) {
+            add_issue(ERR.REF, `${base_path}/entity`, `entity '${entity}' not found`);
+          }
+          if (!is_positive_int(count)) {
+            add_issue(ERR.SCHEMA, `${base_path}/count`, 'count must be positive integer');
+          }
+
+          out.push({ op: 'spawn', entity, to_zone, owner, count, props: node.props });
+        } else if (entity_type) {
+          // 否则通过 entity_type 获取所有实体
+          const type_entities = Object.values(entities_index).filter((e: any) => e.type === entity_type);
+          if (type_entities.length === 0) {
+            add_issue(ERR.REF, `${base_path}/entity_type`, `no entity of type '${entity_type}' found`);
+            break;
+          }
+          for (let index = 0; index < type_entities.length; index++) {
+            out.push({ op: 'spawn', entity: (type_entities[index] as any).id, to_zone, owner, count: 1, props: node.props});
+          }
         }
 
-        out.push({ op: 'spawn', entity, to_zone, owner, count, props: node.props });
         break;
       }
 

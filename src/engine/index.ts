@@ -14,7 +14,7 @@ import { mulberry32 } from '../utils/rng.util';
 import { end_turn, move_top } from './actions';
 import { validate_state } from './validate';
 import { step_compiled } from './step_compiled';
-import { effectExecutors, type EffectOp } from './effects';
+import { effect_executors, type EffectOp } from './effects';
 
 /**
  * initial_state()
@@ -120,7 +120,7 @@ export async function initial_state(input: InitialStateInput): Promise<InitialSt
 
   // 根据 compiled_spec.initializers.plan 执行初始化指令
   for (const op of input.compiled_spec.initializers.plan as EffectOp[]) {
-    const exec = effectExecutors[op.op as EffectOp['op']];
+    const exec = effect_executors[op.op as EffectOp['op']];
     if (!exec) throw new Error(`unknown init op '${(op as any).op}'`);
     game_state = exec(op as any, {
       compiled: input.compiled_spec,
@@ -270,7 +270,7 @@ export async function step(input: StepInput): Promise<StepOutput> {
         (t) => t.from === phase_before && t.when === action.id,
       );
       if (tr) {
-        const exec = effectExecutors['set_phase'];
+        const exec = effect_executors['set_phase'];
         next_state = exec({ op: 'set_phase', phase: tr.to } as any, {
           compiled: compiled_spec,
           state: next_state,

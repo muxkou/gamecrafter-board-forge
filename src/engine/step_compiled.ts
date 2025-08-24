@@ -2,7 +2,7 @@
 import type { GameState, ReduceContext } from '../types';
 import { CompiledSpecType } from '../schema';
 import { validate_state } from './validate';
-import { effectExecutors, type EffectOp } from './effects';
+import { effect_executors, type EffectOp } from './effects';
 import type { CompiledActionCall, InterpreterCtx } from './effects/types';
 import { eval_condition } from './helpers/expr.util';
 import { run_triggers } from './triggers';
@@ -16,7 +16,7 @@ type CompiledActionDef = {
   action_hash: string;
 };
 
-const EXECUTORS: Record<EffectOp['op'], (op: any, ctx: InterpreterCtx) => GameState> = effectExecutors;
+const EXECUTORS: Record<EffectOp['op'], (op: any, ctx: InterpreterCtx) => GameState> = effect_executors;
 
 function jsonSchemaToZod(schema: any): z.ZodTypeAny {
   if (!schema || Object.keys(schema).length === 0) return z.any();

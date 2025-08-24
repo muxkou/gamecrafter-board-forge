@@ -5,6 +5,8 @@ import { join, resolve, dirname } from "node:path";
 import { compile } from "../compiler";
 import { initial_state } from "../engine";
 
+// pnpm run cli:dev ./samples/uno
+
 /** 生成一个“写入器”：接收字符串和文件名，落到 baseDir 下；若是 JSON 字符串则优雅缩进 */
 export function create_folder_writer(baseDir: string, spaces = 2) {
   return async (content: string, filename: string): Promise<string> => {
@@ -80,7 +82,7 @@ program
         process.exitCode = 1;
         return;
       }
-
+      console.log('Completed Compile =========>');
       // 把编译结果转成字符串（给写入器）；
       // 这里保持一次 stringify，写入器若接到合法 JSON 仍会按需要 reformat
       const compiled_text =
@@ -91,7 +93,7 @@ program
       const wtf = create_folder_writer(baseDir, spaces);
       await wtf(compiled_text, 'compile.out.json');
       // console.log(`✅ Output written to: ${target}`);
-
+      
       /***
        * 步骤: Init State
        * *****

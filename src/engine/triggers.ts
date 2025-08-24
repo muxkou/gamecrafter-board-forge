@@ -1,6 +1,6 @@
 import type { GameState, ReduceContext } from '../types';
 import type { CompiledSpecType } from '../schema';
-import { effectExecutors, type EffectOp } from './effects';
+import { effect_executors, type EffectOp } from './effects';
 import type { CompiledActionCall, InterpreterCtx } from './effects/types';
 
 /**
@@ -25,7 +25,7 @@ export function run_triggers(args: {
   for (const pipeline of pipelines) {
     const ops = Array.isArray(pipeline) ? pipeline : [pipeline];
     for (const op of ops) {
-      const exec = effectExecutors[op.op as EffectOp['op']];
+      const exec = effect_executors[op.op as EffectOp['op']];
       if (!exec) throw new Error(`不支持的 op: ${(op as any).op}`);
       ctx.state = state;
       state = exec(op as any, ctx);

@@ -46,7 +46,7 @@ export async function compile(input: CompileInput): Promise<CompileOutput> {
     ])
   );
   const entities_index = Object.fromEntries(
-    dsl.entities.map(e => [e.id, { props: e.props ?? {} }])
+    dsl.entities.map(e => [e.id, { props: e.props ?? {}, type: e.type, id: e.id }])
   );
 
   // 构建 actions_index（规范化 effect_pipeline + action_hash）
