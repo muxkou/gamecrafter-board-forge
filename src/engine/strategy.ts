@@ -1,5 +1,5 @@
 import type { GameState } from '../types';
-import type { ActionCall } from './legal_actions_compiled';
+import type { ActionCall } from './legal_actions';
 
 export interface StrategyContext {
   seat: string;

@@ -12,7 +12,7 @@
 - **纯 TypeScript**，完整类型声明与 ESM/CJS 双包。
 - **确定性与可复现**：所有随机只来自 `seed`，状态序列化采用 `canonical_stringify`，并计算 `sha256` 哈希。
 - **结构清晰的编译产物**：`actions_index`、`zones_index`、`phase_graph`、`victory`、`eval_limits` 等。
-- **轻量合法行动枚举**：`legal_actions_compiled` 在不执行效果的前提下近似枚举可能的行动调用。
+- **轻量合法行动枚举**：`legal_actions` 在不执行效果的前提下近似枚举可能的行动调用。
 - **策略接口**：可插拔策略（如 `first_strategy`、`random_strategy`）。
 
 ## 安装
@@ -83,9 +83,9 @@ if (r.ok) {
 ### 3) 近似枚举合法行动
 
 ```ts
-import { legal_actions_compiled } from './src/engine/legal_actions_compiled';
+import { legal_actions } from './src/engine/legal_actions';
 
-const calls = legal_actions_compiled({
+const calls = legal_actions({
   compiled_spec: result.compiled_spec as any, // 与内部结构对齐的最小形状
   game_state: init.game_state,
   by: init.game_state.active_seat || '',
@@ -132,7 +132,7 @@ console.log(parallel);
 - **引擎**（`src/engine/index.ts`）
   - `initial_state(input: InitialStateInput): Promise<InitialStateOutput>`
   - `step(input: StepInput): Promise<StepOutput>`
-  - 工具：`legal_actions_compiled(args): ActionCall[]`
+  - 工具：`legal_actions(args): ActionCall[]`
   - 策略：`Strategy`、`first_strategy`、`random_strategy`
 
 - **并行**（`src/engine/parallel_auto_runner.ts`）
@@ -145,7 +145,7 @@ console.log(parallel);
 > 约束与保证：
 > - `initial_state` 与 `step` 遵循纯函数式接口；哈希通过 `canonical_stringify` + `sha256` 计算。
 > - `step` 优先使用编译产物的解释器路径（`step_compiled`），未提供编译产物时回退到硬编码动作分发（目前内置 `end_turn`、`move_top`）。
-> - `legal_actions_compiled` 为轻量近似（侧重 `move_top` 的首节点检查），严格合法性仍以 `step`/`step_compiled` 的校验为准。
+> - `legal_actions` 为轻量近似（侧重 `move_top` 的首节点检查），严格合法性仍以 `step`/`step_compiled` 的校验为准。
 
 ## 项目脚本
 

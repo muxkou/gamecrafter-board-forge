@@ -4,7 +4,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join, resolve, dirname } from "node:path";
 import { compile } from "../compiler";
 import { initial_state } from "../engine";
-import { legal_actions_compiled } from "../engine/legal_actions_compiled";
+import { legal_actions } from "../engine/legal_actions";
 
 // pnpm run cli:dev ./samples/uno
 
@@ -125,7 +125,7 @@ program
         return;
       }
 
-      const calls = legal_actions_compiled({
+      const calls = legal_actions({
         compiled_spec: compiled.compiled_spec,
         game_state: init.game_state,
         by: active_seat,

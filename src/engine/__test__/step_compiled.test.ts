@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { compile } from '../../compiler/index';
 import { initial_state } from '../index';
 import { step_compiled } from '../step_compiled';
-import { legal_actions_compiled } from '../legal_actions_compiled';
+import { legal_actions } from '../legal_actions';
 
 function dslWithActions() {
   return {
@@ -219,13 +219,13 @@ describe('step_compiled (interpreter)', () => {
     expect(err).toMatchObject({ code: 'BAD_PAYLOAD' });
   });
 
-  it('integration with legal_actions_compiled: suggested calls include draw with empty payload', async () => {
+  it('integration with legal_actions: suggested calls include draw with empty payload', async () => {
     const { compiled_spec, init } = await buildCompiledAndInit();
     const gs: any = init.game_state;
     gs.zones.deck.instances['A'].items = ['c1', 'c2'];
     gs.zones.hand.instances['A'].items = [];
 
-    const calls = legal_actions_compiled({
+    const calls = legal_actions({
       compiled_spec: compiled_spec as any,
       game_state: gs,
       by: 'A',
@@ -311,12 +311,12 @@ describe('new effect ops', () => {
     expect(ns.entities['e1']).toBeUndefined();
   });
 
-  it('legal_actions_compiled includes new ops', async () => {
+  it('legal_actions includes new ops', async () => {
     const { compiled_spec, init } = await build();
     const gs: any = init.game_state;
     gs.zones.hand.instances['A'].items = ['e1'];
     gs.entities['e1'] = { entity_type: 'card', props: {} } as any;
-    const calls = legal_actions_compiled({
+    const calls = legal_actions({
       compiled_spec: compiled_spec as any,
       game_state: gs,
       by: 'A',

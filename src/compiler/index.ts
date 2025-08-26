@@ -80,12 +80,34 @@ export async function compile(input: CompileInput): Promise<CompileOutput> {
     // 为规范化后的管线生成稳定哈希：先 canonical_stringify（字段顺序固定、无多余空白），再 sha256
     const action_hash = hash_sha256(canonical_stringify(pipeline));
 
+    // 枚举元数据：从 input_spec.enum 或 effect 中引用 payload.xxx 的 from_zone 推导
+    const enum_meta: Record<string, { zone?: string; owner?: string; values?: unknown[] }> = {};
+    if (a.input && (a as any).input?.properties) {
+      for (const [key, prop] of Object.entries((a as any).input.properties as Record<string, any>)) {
+        if (Array.isArray(prop.enum)) {
+          enum_meta[key] = { values: [...prop.enum] };
+          continue;
+        }
+        // 从 effect 中寻找 "payload.key" 的引用，并提取 from_zone/from_owner
+        for (const step of a.effect ?? []) {
+          const s: any = step;
+          const candidates = Object.values(s) as any[];
+          const hit = candidates.some(v => v && typeof v === 'object' && v.var === `payload.${key}`);
+          if (hit && typeof s.from_zone === 'string') {
+            enum_meta[key] = { zone: s.from_zone, owner: typeof s.from_owner === 'string' ? s.from_owner : undefined };
+            break;
+          }
+        }
+      }
+    }
+
     // 写入编译结果：输入 schema、require 的 AST（这里默认恒真）、规范化后的管线和 hash
     actions_index[a.id] = {
       input_spec: a.input ?? {},              // 没写 input 就给空对象
       require_ast: a.require ?? { const: true }, // 没写 require 就默认恒真
       effect_pipeline: pipeline,
-      action_hash
+      action_hash,
+      ...(Object.keys(enum_meta).length ? { input_enum: enum_meta } : {})
     };
   }
 

@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { compile } from '../../compiler/index';
 import type { Strategy } from '../strategy';
 
-vi.mock('../legal_actions_compiled', () => ({
-  legal_actions_compiled: ({ by }: { by: string }) => [ { action: 'noop', by, payload: {} } ]
+vi.mock('../legal_actions', () => ({
+  legal_actions: ({ by }: { by: string }) => [ { action: 'noop', by, payload: {} } ]
 }));
 
 import { auto_runner } from '../auto_runner';
