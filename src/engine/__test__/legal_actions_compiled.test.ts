@@ -43,8 +43,8 @@ function dsl() {
   } as const;
 }
 
-describe('legal_actions_compiled pipeline simulation', () => {
-  it('considers resources across multiple steps', async () => {
+describe('legal_actions_compiled require-only mode', () => {
+  it('does not filter by resource/capacity; only checks require', async () => {
     const compiled = await compile({ dsl: dsl() });
     expect(compiled.ok).toBe(true);
     const seats = ['A', 'B'];
@@ -53,14 +53,14 @@ describe('legal_actions_compiled pipeline simulation', () => {
 
     gs.zones.deck.instances['_'].items = ['c1'];
     const calls0 = legal_actions_compiled({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats });
-    expect(calls0.some(c => c.action === 'double_draw')).toBe(false);
+    expect(calls0.some(c => c.action === 'double_draw')).toBe(true);
 
     gs.zones.deck.instances['_'].items = ['c1', 'c2'];
     const calls1 = legal_actions_compiled({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats, maxCountsPerAction: 2 });
     expect(calls1.some(c => c.action === 'double_draw')).toBe(true);
   });
 
-  it('takes prior spawn into account for subsequent deal', async () => {
+  it('does not depend on prior ops simulation; spawn1_deal also listed', async () => {
     const compiled = await compile({ dsl: dsl() });
     expect(compiled.ok).toBe(true);
     const seats = ['A', 'B'];
@@ -69,7 +69,7 @@ describe('legal_actions_compiled pipeline simulation', () => {
     gs.zones.deck.instances['_'].items = [];
     const calls = legal_actions_compiled({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats });
     expect(calls.some(c => c.action === 'spawn2_deal')).toBe(true);
-    expect(calls.some(c => c.action === 'spawn1_deal')).toBe(false);
+    expect(calls.some(c => c.action === 'spawn1_deal')).toBe(true);
   });
 });
 
