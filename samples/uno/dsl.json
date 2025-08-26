@@ -95,7 +95,33 @@
   "phases": [],
   "actions": [
     {
+      "id": "play_any_on_empty",
+      "input": {
+        "type": "object",
+        "properties": { "card_id": { "type": "string" } },
+        "required": ["card_id"]
+      },
+      "require": {
+        "op": "==",
+        "args": [
+          { "op": "get", "args": [ { "var": "state.zones.pool.instances._.items" }, "length" ] },
+          0
+        ]
+      },
+      "effect": [
+        {
+          "op": "move_id",
+          "from_zone": "hand",
+          "to_zone": "pool",
+          "from_owner": "by",
+          "to_owner": "_",
+          "entity_id": { "var": "payload.card_id" }
+        }
+      ]
+    },
+    {
       "id": "play_card",
+      "auto_enum": true,
       "input": {
         "type": "object",
         "properties": { "card_id": { "type": "string" } },
@@ -133,6 +159,48 @@
     },
     {
       "id": "draw",
+      "require": {
+        "op": "and",
+        "args": [
+          {
+            "op": ">",
+            "args": [
+              { "op": "get", "args": [ { "var": "state.zones.pool.instances._.items" }, "length" ] },
+              0
+            ]
+          },
+          {
+            "op": "not",
+            "args": [
+              {
+                "op": "any",
+                "args": [
+                  { "var": "state.zones.hand.instances.by.items" },
+                  {
+                    "op": "or",
+                    "args": [
+                      {
+                        "op": "==",
+                        "args": [
+                          { "op": "get", "args": [ { "var": "state.entities" }, { "var": "item" }, "props", "color" ] },
+                          { "op": "get", "args": [ { "var": "state.entities" }, { "op": "get", "args": [ { "var": "state.zones.pool.instances._.items" }, 0 ] }, "props", "color" ] }
+                        ]
+                      },
+                      {
+                        "op": "==",
+                        "args": [
+                          { "op": "get", "args": [ { "var": "state.entities" }, { "var": "item" }, "props", "num" ] },
+                          { "op": "get", "args": [ { "var": "state.entities" }, { "op": "get", "args": [ { "var": "state.zones.pool.instances._.items" }, 0 ] }, "props", "num" ] }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
       "effect": [
         { "op": "deal", "from_zone": "desk", "to_zone": "hand", "from_owner": "_", "to_owner": "by", "count": 1 }
       ]

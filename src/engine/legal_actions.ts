@@ -1,6 +1,6 @@
 import { CompiledSpecType } from "../schema";
 import { GameState } from "../types";
-import { eval_condition } from "./helpers/expr.util";
+import { eval_condition, type ExprAST } from "./helpers/expr.util";
 import type { InterpreterCtx } from "./effects/types";
 
 /**
@@ -21,7 +21,7 @@ export type EnumSource = { zone?: string; owner?: string; values?: unknown[] };
 export type EffectDef = {
   action_hash: string;
   effect_pipeline: unknown[];
-  require_ast?: unknown;
+  require_ast?: ExprAST;
   input_enum?: Record<string, EnumSource>;
 };
 

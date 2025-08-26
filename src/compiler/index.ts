@@ -82,20 +82,28 @@ export async function compile(input: CompileInput): Promise<CompileOutput> {
 
     // 枚举元数据：从 input_spec.enum 或 effect 中引用 payload.xxx 的 from_zone 推导
     const enum_meta: Record<string, { zone?: string; owner?: string; values?: unknown[] }> = {};
+    // 只有显式设置 auto_enum: true 才进行自动枚举推导
+    const should_auto_enum = (a as any).auto_enum === true;
+    
     if (a.input && (a as any).input?.properties) {
       for (const [key, prop] of Object.entries((a as any).input.properties as Record<string, any>)) {
+
         if (Array.isArray(prop.enum)) {
           enum_meta[key] = { values: [...prop.enum] };
           continue;
         }
-        // 从 effect 中寻找 "payload.key" 的引用，并提取 from_zone/from_owner
-        for (const step of a.effect ?? []) {
-          const s: any = step;
-          const candidates = Object.values(s) as any[];
-          const hit = candidates.some(v => v && typeof v === 'object' && v.var === `payload.${key}`);
-          if (hit && typeof s.from_zone === 'string') {
-            enum_meta[key] = { zone: s.from_zone, owner: typeof s.from_owner === 'string' ? s.from_owner : undefined };
-            break;
+
+        // 只有启用 auto_enum 时才从 effect 中自动推导
+        if (should_auto_enum) {
+          // 从 effect 中寻找 "payload.key" 的引用，并提取 from_zone/from_owner
+          for (const step of a.effect ?? []) {
+            const s: any = step;
+            const candidates = Object.values(s) as any[];
+            const hit = candidates.some(v => v && typeof v === 'object' && v.var === `payload.${key}`);
+            if (hit && typeof s.from_zone === 'string') {
+              enum_meta[key] = { zone: s.from_zone, owner: typeof s.from_owner === 'string' ? s.from_owner : undefined };
+              break;
+            }
           }
         }
       }

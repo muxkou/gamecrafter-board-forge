@@ -184,6 +184,7 @@ const DSL_Action = z
     input: DSL_Input_JSONSchema.optional(),
     require: DSL_Expr.optional(),
     effect: z.array(DSL_EffectNode).optional(),
+    auto_enum: z.boolean().optional(),
   })
   .strict();
 

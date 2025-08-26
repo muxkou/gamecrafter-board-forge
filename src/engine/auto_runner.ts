@@ -118,8 +118,7 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
       const calls = legal_actions({
         compiled_spec: compiled_spec as CompiledLike,
         game_state: state,
-        by: seat,
-        seats
+        by: seat
       });
       // 无合法行动：记平局与 no_action，结束该局
       if (calls.length === 0) { ties++; no_action++; break; }

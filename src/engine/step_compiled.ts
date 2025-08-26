@@ -4,14 +4,14 @@ import { CompiledSpecType } from '../schema';
 import { validate_state } from './validate';
 import { effect_executors, type EffectOp } from './effects';
 import type { CompiledActionCall, InterpreterCtx } from './effects/types';
-import { eval_condition } from './helpers/expr.util';
+import { eval_condition, type ExprAST } from './helpers/expr.util';
 import { run_triggers } from './triggers';
 import z from 'zod';
 
 // 与编译产物的 actions_index[key] 对齐的最小必要形状
 type CompiledActionDef = {
   input_spec?: unknown;
-  require_ast?: unknown;
+  require_ast?: ExprAST;
   effect_pipeline: Array<{ op: EffectOp['op'] } & Record<string, unknown>>;
   action_hash: string;
 };
