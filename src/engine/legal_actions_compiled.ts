@@ -39,7 +39,7 @@ export function legal_actions_compiled(args: {
   maxBranches?: number;
 }): ActionCall[] {
   const { compiled_spec, game_state, by } = args;
-  const branchCap =
+  const branch_cap =
     typeof args.maxBranches === "number" && args.maxBranches > 0
       ? args.maxBranches
       : Infinity;
@@ -67,7 +67,7 @@ export function legal_actions_compiled(args: {
     const ok = def.require_ast === undefined ? true : passes_require(def, name, payload);
     if (ok) {
       out.push({ action: name, by, payload });
-      if (out.length >= branchCap) return out;
+      if (out.length >= branch_cap) return out;
     }
   }
 
