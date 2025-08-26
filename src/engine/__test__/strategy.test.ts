@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { compile } from '../../compiler/index';
 import { initial_state } from '../index';
-import { legal_actions_compiled } from '../legal_actions_compiled';
+import { legal_actions } from '../legal_actions';
 import { first_strategy, random_strategy } from '../strategies';
 import type { Strategy } from '../strategy';
 
@@ -33,7 +33,7 @@ describe('built-in strategies', () => {
     const init = await initial_state({ compiled_spec: compiled.compiled_spec!, seats: ['A'], seed: 1 });
     const gs: any = init.game_state;
     gs.zones.deck.instances['A'].items = ['c1'];
-    const calls = legal_actions_compiled({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats: ['A'] });
+    const calls = legal_actions({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats: ['A'] });
     expect(calls.length).toBe(2);
     const strat: Strategy = first_strategy;
     const chosen = strat.choose(calls, { seat: 'A', state: gs });
@@ -45,7 +45,7 @@ describe('built-in strategies', () => {
     const init = await initial_state({ compiled_spec: compiled.compiled_spec!, seats: ['A'], seed: 1 });
     const gs: any = init.game_state;
     gs.zones.deck.instances['A'].items = ['c1'];
-    const calls = legal_actions_compiled({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats: ['A'] });
+    const calls = legal_actions({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats: ['A'] });
     const chosen = random_strategy.choose(calls, { seat: 'A', state: gs });
     expect(calls.includes(chosen!)).toBe(true);
     expect(random_strategy.choose([], { seat: 'A', state: gs })).toBeNull();

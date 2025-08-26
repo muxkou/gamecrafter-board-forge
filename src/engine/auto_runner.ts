@@ -6,7 +6,7 @@
 import { initial_state, step, eval_victory } from './index';
 import type { CompiledSpecType } from '../schema';
 import type { GameState, Event } from '../types';
-import { ActionCall, CompiledLike, legal_actions_compiled } from './legal_actions_compiled';
+import { ActionCall, CompiledLike, legal_actions } from './legal_actions';
 import type { Strategy } from './strategy';
 import { first_strategy } from './strategies';
 
@@ -66,7 +66,7 @@ function get_strategry(strategies: AutoRunnerOptions['strategies'], seat: string
 
 /**
  * 基于策略的自动运行器：
- * - 每步通过 legal_actions_compiled 枚举候选行动
+ * - 每步通过 legal_actions 枚举候选行动
  * - 根据席位对应的 Strategy 选择下一步
  * - 无候选或 Strategy 返回 null：结束该局，计为平局且记 no_action
  * - Strategy.choose 抛错：记 violations 并终止该局
@@ -115,11 +115,11 @@ export async function auto_runner(opts: AutoRunnerOptions): Promise<AutoRunnerSu
       const seat = state.active_seat || '';
 
       // 1) 列举当前席位的所有合法行动
-      const calls = legal_actions_compiled({ 
-        compiled_spec: compiled_spec as CompiledLike, 
-        game_state: state, 
-        by: seat, 
-        seats 
+      const calls = legal_actions({
+        compiled_spec: compiled_spec as CompiledLike,
+        game_state: state,
+        by: seat,
+        seats
       });
       // 无合法行动：记平局与 no_action，结束该局
       if (calls.length === 0) { ties++; no_action++; break; }

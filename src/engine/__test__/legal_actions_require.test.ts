@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { compile } from '../../compiler';
 import { initial_state } from '../index';
-import { legal_actions_compiled } from '../legal_actions_compiled';
+import { legal_actions } from '../legal_actions';
 
 function dsl() {
   return {
@@ -43,7 +43,7 @@ function dsl() {
   } as const;
 }
 
-describe('legal_actions_compiled require-only mode', () => {
+describe('legal_actions require-only mode', () => {
   it('does not filter by resource/capacity; only checks require', async () => {
     const compiled = await compile({ dsl: dsl() });
     expect(compiled.ok).toBe(true);
@@ -52,11 +52,11 @@ describe('legal_actions_compiled require-only mode', () => {
     const gs: any = init.game_state;
 
     gs.zones.deck.instances['_'].items = ['c1'];
-    const calls0 = legal_actions_compiled({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats });
+    const calls0 = legal_actions({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats });
     expect(calls0.some(c => c.action === 'double_draw')).toBe(true);
 
     gs.zones.deck.instances['_'].items = ['c1', 'c2'];
-    const calls1 = legal_actions_compiled({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats, maxCountsPerAction: 2 });
+    const calls1 = legal_actions({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats, maxCountsPerAction: 2 });
     expect(calls1.some(c => c.action === 'double_draw')).toBe(true);
   });
 
@@ -67,7 +67,7 @@ describe('legal_actions_compiled require-only mode', () => {
     const init = await initial_state({ compiled_spec: compiled.compiled_spec!, seats, seed: 1 });
     const gs: any = init.game_state;
     gs.zones.deck.instances['_'].items = [];
-    const calls = legal_actions_compiled({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats });
+    const calls = legal_actions({ compiled_spec: compiled.compiled_spec!, game_state: gs, by: 'A', seats });
     expect(calls.some(c => c.action === 'spawn2_deal')).toBe(true);
     expect(calls.some(c => c.action === 'spawn1_deal')).toBe(true);
   });

@@ -65,7 +65,7 @@ describe('auto_runner victory handling', () => {
     expect(summary.ties).toBe(1);
     expect(summary.wins).toBe(0);
     expect(summary.losses).toBe(0);
-    // 在 require-only 模式下，legal_actions_compiled 会总是返回至少一个动作（noop），因此 no_action 为 0
+    // 在 require-only 模式下，legal_actions 会总是返回至少一个动作（noop），因此 no_action 为 0
     expect(summary.no_action).toBe(0);
     expect(summary.violations).toBe(0);
     // 在 require-only 模式下，noop 可执行且回合推进一次后再次判 ongoing
