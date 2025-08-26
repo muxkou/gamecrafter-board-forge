@@ -42,6 +42,17 @@ export function eval_expr(ast: unknown, ctx: InterpreterCtx): any {
       const op = node.op as string;
       const args = (node.args ?? []).map((a: any) => eval_expr(a, ctx));
       switch (op) {
+        case 'get': {
+          // get(base, key1, key2, ...)
+          const [base, ...path] = args;
+          let cur: any = base;
+          for (const k of path) {
+            if (cur == null) return undefined;
+            const key = typeof k === 'number' ? k : String(k);
+            cur = cur[key as any];
+          }
+          return cur;
+        }
         case '+':
         case 'add':
           return args[0] + args[1];

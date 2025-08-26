@@ -119,7 +119,7 @@ program
        * *****
        */
       const active_seat = init.game_state.active_seat;
-      console.log(`当前 seat: ${active_seat}`);
+      
       if (!active_seat) {
         console.error(`active_seat is null !`);
         return;
@@ -129,10 +129,12 @@ program
         compiled_spec: compiled.compiled_spec,
         game_state: init.game_state,
         by: active_seat,
-        seats: init.game_state.seats,
       });
 
-      console.log(`calls: ${calls.map(c => c.action)}`);
+      console.group('回合 ******');
+      console.log(`当前 seat: ${active_seat}`);
+      console.log(`可执行 action: ${calls.map(c => c.action)}`);
+      console.groupEnd()
 
     } catch (err: any) {
       if (err?.code === "ENOENT") {

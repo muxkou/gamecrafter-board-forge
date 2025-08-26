@@ -95,89 +95,46 @@
   "phases": [],
   "actions": [
     {
-      "id": "play_first",
-      "require": {
-        "op": "==",
-        "args": [
-          { "var": "state.zones.discard_pile.instances._.items.length" },
-          0
-        ]
-      },
-      "effect": [
-        {
-          "op": "move_top",
-          "from_zone": "hand",
-          "to_zone": "discard_pile",
-          "from_owner": "active",
-          "to_owner": "_",
-          "count": 1
-        }
-      ]
-    },
-    {
-      "id": "play_match",
+      "id": "play_card",
       "input": {
         "type": "object",
         "properties": { "card_id": { "type": "string" } },
         "required": ["card_id"]
       },
       "require": {
-        "op": "and",
+        "op": "or",
         "args": [
           {
-            "op": ">",
+            "op": "==",
             "args": [
-              { "var": "state.zones.discard_pile.instances._.items.length" },
-              0
+              { "op": "get", "args": [ { "var": "state.entities" }, { "var": "payload.card_id" }, "props", "color" ] },
+              { "op": "get", "args": [ { "var": "state.entities" }, { "op": "get", "args": [ { "var": "state.zones.pool.instances._.items" }, 0 ] }, "props", "color" ] }
             ]
           },
           {
-            "op": "or",
+            "op": "==",
             "args": [
-              {
-                "op": "==",
-                "args": [
-                  { "var": "state.entities[payload.card_id].props.color" },
-                  {
-                    "var": "state.entities[state.zones.discard_pile.instances._.items.-1].props.color"
-                  }
-                ]
-              },
-              {
-                "op": "==",
-                "args": [
-                  { "var": "state.entities[payload.card_id].props.num" },
-                  {
-                    "var": "state.entities[state.zones.discard_pile.instances._.items.-1].props.num"
-                  }
-                ]
-              }
+              { "op": "get", "args": [ { "var": "state.entities" }, { "var": "payload.card_id" }, "props", "num" ] },
+              { "op": "get", "args": [ { "var": "state.entities" }, { "op": "get", "args": [ { "var": "state.zones.pool.instances._.items" }, 0 ] }, "props", "num" ] }
             ]
           }
         ]
       },
       "effect": [
         {
-          "op": "move_card",
-          "card_id": { "var": "payload.card_id" },
+          "op": "move_id",
           "from_zone": "hand",
-          "to_zone": "discard_pile",
-          "from_owner": "active",
-          "to_owner": "_"
+          "to_zone": "pool",
+          "from_owner": "by",
+          "to_owner": "_",
+          "entity_id": { "var": "payload.card_id" }
         }
       ]
     },
     {
-      "id": "draw_one",
+      "id": "draw",
       "effect": [
-        {
-          "op": "deal",
-          "from_zone": "desk",
-          "to_zone": "hand",
-          "from_owner": "_",
-          "to_owner": "active",
-          "count": 1
-        }
+        { "op": "deal", "from_zone": "desk", "to_zone": "hand", "from_owner": "_", "to_owner": "by", "count": 1 }
       ]
     }
   ],

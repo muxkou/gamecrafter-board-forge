@@ -6,6 +6,7 @@ import { exec_spawn, type SpawnOp } from './spawn';
 import { exec_destroy, type DestroyOp } from './destroy';
 import { exec_set_phase, type SetPhaseOp } from './set_phase';
 import { exec_move_piece, type MovePieceOp } from './move_piece';
+import { exec_move_id, type MoveIdOp } from './move_id';
 import type { EffectExecutor } from './types';
 
 export type EffectOp =
@@ -16,7 +17,8 @@ export type EffectOp =
   | SpawnOp
   | DestroyOp
   | SetPhaseOp
-  | MovePieceOp;
+  | MovePieceOp
+  | MoveIdOp;
 
 export const effect_executors: Record<EffectOp['op'], EffectExecutor<any>> = {
   move_top: exec_move_top,
@@ -27,6 +29,7 @@ export const effect_executors: Record<EffectOp['op'], EffectExecutor<any>> = {
   destroy: exec_destroy,
   set_phase: exec_set_phase,
   move_piece: exec_move_piece,
+  move_id: exec_move_id,
 };
 
 

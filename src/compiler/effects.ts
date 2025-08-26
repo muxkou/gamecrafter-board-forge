@@ -52,6 +52,15 @@ type SetPhaseNode = {
   phase: string;
 };
 
+type MoveIdNode = {
+  op: 'move_id';
+  from_zone: string;
+  to_zone: string;
+  from_owner: 'by' | 'active' | string;
+  to_owner: 'by' | 'active' | string;
+  entity_id: string;
+};
+
 type MovePieceNode = {
   op: 'move_piece';
   zone: string;
@@ -68,8 +77,9 @@ type EffectNode =
   | DestroyNode
   | SetVarNode
   | SetPhaseNode
-  | MovePieceNode;
-const Supported_Effect_Op = ['move_top', 'shuffle', 'deal', 'spawn', 'destroy', 'set_var', 'set_phase', 'move_piece'];
+  | MovePieceNode
+  | MoveIdNode;
+const Supported_Effect_Op = ['move_top', 'shuffle', 'deal', 'spawn', 'destroy', 'set_var', 'set_phase', 'move_piece', 'move_id'];
 
 export function normalize_effect_pipeline(
   raw: unknown,
@@ -263,6 +273,31 @@ export function normalize_effect_pipeline(
         return null;
       }
       out.push({ op: 'set_phase', phase });
+    }
+    else if (node.op === 'move_id') {
+      const from_zone = String(node.from_zone ?? "");
+      const to_zone   = String(node.to_zone ?? "");
+      const from_owner = (node.from_owner ?? 'by') as MoveIdNode['from_owner'];
+      const to_owner   = (node.to_owner   ?? 'by') as MoveIdNode['to_owner'];
+      const entity_id  = String(node.entity_id ?? "");
+
+      if (!from_zone || !to_zone) {
+        add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}`, 'from_zone/to_zone is required');
+        return null;
+      }
+      if (!entity_id) {
+        add_issue('SCHEMA_ERROR', `/actions/*/effect/${i}/entity_id`, 'entity_id is required');
+        return null;
+      }
+      const zFrom = zones_index[from_zone];
+      const zTo   = zones_index[to_zone];
+      if (!zFrom) add_issue('REF_NOT_FOUND', `/actions/*/effect/${i}/from_zone`, `zone '${from_zone}' not found`);
+      if (!zTo)   add_issue('REF_NOT_FOUND', `/actions/*/effect/${i}/to_zone`,   `zone '${to_zone}' not found`);
+      const supported = (k: string) => k === 'list' || k === 'stack' || k === 'queue';
+      if (zFrom && !supported(zFrom.kind)) add_issue('KIND_UNSUPPORTED', `/actions/*/effect/${i}/from_zone`, `kind '${zFrom.kind}' not supported by move_id`);
+      if (zTo   && !supported(zTo.kind))   add_issue('KIND_UNSUPPORTED', `/actions/*/effect/${i}/to_zone`,   `kind '${zTo.kind}' not supported by move_id`);
+
+      out.push({ op: 'move_id', from_zone, to_zone, from_owner, to_owner, entity_id });
     }
 
   }
