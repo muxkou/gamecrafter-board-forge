@@ -116,21 +116,54 @@
     },
     {
       "id": "play_match",
+      "input": {
+        "type": "object",
+        "properties": { "card_id": { "type": "string" } },
+        "required": ["card_id"]
+      },
       "require": {
-        "op": ">",
+        "op": "and",
         "args": [
-          { "var": "state.zones.discard_pile.instances._.items.length" },
-          0
+          {
+            "op": ">",
+            "args": [
+              { "var": "state.zones.discard_pile.instances._.items.length" },
+              0
+            ]
+          },
+          {
+            "op": "or",
+            "args": [
+              {
+                "op": "==",
+                "args": [
+                  { "var": "state.entities[payload.card_id].props.color" },
+                  {
+                    "var": "state.entities[state.zones.discard_pile.instances._.items.-1].props.color"
+                  }
+                ]
+              },
+              {
+                "op": "==",
+                "args": [
+                  { "var": "state.entities[payload.card_id].props.num" },
+                  {
+                    "var": "state.entities[state.zones.discard_pile.instances._.items.-1].props.num"
+                  }
+                ]
+              }
+            ]
+          }
         ]
       },
       "effect": [
         {
-          "op": "move_top",
+          "op": "move_card",
+          "card_id": { "var": "payload.card_id" },
           "from_zone": "hand",
           "to_zone": "discard_pile",
           "from_owner": "active",
-          "to_owner": "_",
-          "count": 1
+          "to_owner": "_"
         }
       ]
     },
