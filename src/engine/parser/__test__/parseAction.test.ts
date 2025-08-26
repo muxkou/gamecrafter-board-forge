@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseAction } from "../parseAction";
+import { parse_action } from "../parse-action";
 import { NodeKind } from "../../ast";
 
-describe("parseAction", () => {
+describe("parse-action", () => {
   it("parses nested structures and preserves props", () => {
     const dsl = {
       op: "move_top",
@@ -12,7 +12,7 @@ describe("parseAction", () => {
       input: { type: "number" },
       extra: { foo: 1 },
     };
-    const ast = parseAction(dsl);
+    const ast = parse_action(dsl);
     expect(ast).toMatchObject({
       kind: NodeKind.Action,
       action: "move_top",
@@ -27,17 +27,17 @@ describe("parseAction", () => {
 
   it("throws friendly error on non-array effect", () => {
     const dsl: any = { op: "move_top", effect: {} };
-    expect(() => parseAction(dsl)).toThrow(/effect.*array/);
+    expect(() => parse_action(dsl)).toThrow(/effect.*array/);
   });
 
   it("throws friendly error on invalid args", () => {
     const dsl: any = { op: "foo", require: { op: "and", args: 1 } };
-    expect(() => parseAction(dsl)).toThrow(/args must be an array/);
+    expect(() => parse_action(dsl)).toThrow(/args must be an array/);
   });
 
   it("retains unknown fields like quantifier", () => {
     const dsl: any = { op: "foo", quantifier: { some: true } };
-    const ast = parseAction(dsl);
+    const ast = parse_action(dsl);
     expect(ast.props?.quantifier).toEqual({ some: true });
   });
 });
