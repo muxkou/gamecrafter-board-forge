@@ -22,8 +22,16 @@ export interface BaseNode { kind: NodeKind }
  */
 export interface ActionNode extends BaseNode {
   kind: NodeKind.Action;
+  /** 动作名称或操作符 */
   action: string;
-  args?: ExprNode[];
+  /** 输入规范或参数 */
+  input?: unknown;
+  /** 前置条件表达式 */
+  require?: unknown;
+  /** 子效果（递归的动作节点） */
+  effect?: ActionNode[];
+  /** 其他参数（原样保留以便向后兼容） */
+  props?: Record<string, unknown>;
 }
 
 /**
@@ -106,8 +114,11 @@ export type ASTNode =
  * @param id 动作标识
  * @param args 参数表达式列表
  */
-export function create_action_node(id: string, args: ExprNode[] = []): ActionNode {
-  return { kind: NodeKind.Action, action: id, args };
+export function create_action_node(
+  id: string,
+  props: Record<string, unknown> = {},
+): ActionNode {
+  return { kind: NodeKind.Action, action: id, props };
 }
 
 /**
