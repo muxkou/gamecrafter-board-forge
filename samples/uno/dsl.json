@@ -12,50 +12,51 @@
     }
   },
   "entities": [
-    { "id": "red-1", "props": { "count": 2 }, "type": "card" },
-    { "id": "red-3", "props": { "count": 2 }, "type": "card" },
-    { "id": "red-2", "props": { "count": 2 }, "type": "card" },
-    { "id": "red-4", "props": { "count": 2 }, "type": "card" },
-    { "id": "red-5", "props": { "count": 2 }, "type": "card" },
-    { "id": "red-6", "props": { "count": 2 }, "type": "card" },
-    { "id": "red-7", "props": { "count": 2 }, "type": "card" },
-    { "id": "red-8", "props": { "count": 2 }, "type": "card" },
-    { "id": "red-9", "props": { "count": 2 }, "type": "card" },
-    { "id": "red-0", "props": { "count": 1 }, "type": "card" },
-
-    { "id": "blue-1", "props": { "count": 2 }, "type": "card" },
-    { "id": "blue-2", "props": { "count": 2 }, "type": "card" },
-    { "id": "blue-3", "props": { "count": 2 }, "type": "card" },
-    { "id": "blue-4", "props": { "count": 2 }, "type": "card" },
-    { "id": "blue-5", "props": { "count": 2 }, "type": "card" },
-    { "id": "blue-6", "props": { "count": 2 }, "type": "card" },
-    { "id": "blue-7", "props": { "count": 2 }, "type": "card" },
-    { "id": "blue-8", "props": { "count": 2 }, "type": "card" },
-    { "id": "blue-9", "props": { "count": 2 }, "type": "card" },
-    { "id": "blue-0", "props": { "count": 1 }, "type": "card" },
-
-    { "id": "green-1", "props": { "count": 2 }, "type": "card" },
-    { "id": "green-2", "props": { "count": 2 }, "type": "card" },
-    { "id": "green-3", "props": { "count": 2 }, "type": "card" },
-    { "id": "green-4", "props": { "count": 2 }, "type": "card" },
-    { "id": "green-5", "props": { "count": 2 }, "type": "card" },
-    { "id": "green-6", "props": { "count": 2 }, "type": "card" },
-    { "id": "green-7", "props": { "count": 2 }, "type": "card" },
-    { "id": "green-8", "props": { "count": 2 }, "type": "card" },
-    { "id": "green-9", "props": { "count": 2 }, "type": "card" },
-    { "id": "green-0", "props": { "count": 1 }, "type": "card" },
-
-    { "id": "yellow-1", "props": { "count": 2 }, "type": "card" },
-    { "id": "yellow-2", "props": { "count": 2 }, "type": "card" },
-    { "id": "yellow-3", "props": { "count": 2 }, "type": "card" },
-    { "id": "yellow-4", "props": { "count": 2 }, "type": "card" },
-    { "id": "yellow-5", "props": { "count": 2 }, "type": "card" },
-    { "id": "yellow-6", "props": { "count": 2 }, "type": "card" },
-    { "id": "yellow-7", "props": { "count": 2 }, "type": "card" },
-    { "id": "yellow-8", "props": { "count": 2 }, "type": "card" },
-    { "id": "yellow-9", "props": { "count": 2 }, "type": "card" },
-    { "id": "yellow-0", "props": { "count": 1 }, "type": "card" }
-  ],
+    { "id": "red-1", "props": { "count": 2, "color": "red", "num": 1 }, "type": "card" },
+    { "id": "red-2", "props": { "count": 2, "color": "red", "num": 2 }, "type": "card" },
+    { "id": "red-3", "props": { "count": 2, "color": "red", "num": 3 }, "type": "card" },
+    { "id": "red-4", "props": { "count": 2, "color": "red", "num": 4 }, "type": "card" },
+    { "id": "red-5", "props": { "count": 2, "color": "red", "num": 5 }, "type": "card" },
+    { "id": "red-6", "props": { "count": 2, "color": "red", "num": 6 }, "type": "card" },
+    { "id": "red-7", "props": { "count": 2, "color": "red", "num": 7 }, "type": "card" },
+    { "id": "red-8", "props": { "count": 2, "color": "red", "num": 8 }, "type": "card" },
+    { "id": "red-9", "props": { "count": 2, "color": "red", "num": 9 }, "type": "card" },
+    { "id": "red-0", "props": { "count": 1, "color": "red", "num": 0 }, "type": "card" },
+  
+    { "id": "blue-1", "props": { "count": 2, "color": "blue", "num": 1 }, "type": "card" },
+    { "id": "blue-2", "props": { "count": 2, "color": "blue", "num": 2 }, "type": "card" },
+    { "id": "blue-3", "props": { "count": 2, "color": "blue", "num": 3 }, "type": "card" },
+    { "id": "blue-4", "props": { "count": 2, "color": "blue", "num": 4 }, "type": "card" },
+    { "id": "blue-5", "props": { "count": 2, "color": "blue", "num": 5 }, "type": "card" },
+    { "id": "blue-6", "props": { "count": 2, "color": "blue", "num": 6 }, "type": "card" },
+    { "id": "blue-7", "props": { "count": 2, "color": "blue", "num": 7 }, "type": "card" },
+    { "id": "blue-8", "props": { "count": 2, "color": "blue", "num": 8 }, "type": "card" },
+    { "id": "blue-9", "props": { "count": 2, "color": "blue", "num": 9 }, "type": "card" },
+    { "id": "blue-0", "props": { "count": 1, "color": "blue", "num": 0 }, "type": "card" },
+  
+    { "id": "green-1", "props": { "count": 2, "color": "green", "num": 1 }, "type": "card" },
+    { "id": "green-2", "props": { "count": 2, "color": "green", "num": 2 }, "type": "card" },
+    { "id": "green-3", "props": { "count": 2, "color": "green", "num": 3 }, "type": "card" },
+    { "id": "green-4", "props": { "count": 2, "color": "green", "num": 4 }, "type": "card" },
+    { "id": "green-5", "props": { "count": 2, "color": "green", "num": 5 }, "type": "card" },
+    { "id": "green-6", "props": { "count": 2, "color": "green", "num": 6 }, "type": "card" },
+    { "id": "green-7", "props": { "count": 2, "color": "green", "num": 7 }, "type": "card" },
+    { "id": "green-8", "props": { "count": 2, "color": "green", "num": 8 }, "type": "card" },
+    { "id": "green-9", "props": { "count": 2, "color": "green", "num": 9 }, "type": "card" },
+    { "id": "green-0", "props": { "count": 1, "color": "green", "num": 0 }, "type": "card" },
+  
+    { "id": "yellow-1", "props": { "count": 2, "color": "yellow", "num": 1 }, "type": "card" },
+    { "id": "yellow-2", "props": { "count": 2, "color": "yellow", "num": 2 }, "type": "card" },
+    { "id": "yellow-3", "props": { "count": 2, "color": "yellow", "num": 3 }, "type": "card" },
+    { "id": "yellow-4", "props": { "count": 2, "color": "yellow", "num": 4 }, "type": "card" },
+    { "id": "yellow-5", "props": { "count": 2, "color": "yellow", "num": 5 }, "type": "card" },
+    { "id": "yellow-6", "props": { "count": 2, "color": "yellow", "num": 6 }, "type": "card" },
+    { "id": "yellow-7", "props": { "count": 2, "color": "yellow", "num": 7 }, "type": "card" },
+    { "id": "yellow-8", "props": { "count": 2, "color": "yellow", "num": 8 }, "type": "card" },
+    { "id": "yellow-9", "props": { "count": 2, "color": "yellow", "num": 9 }, "type": "card" },
+    { "id": "yellow-0", "props": { "count": 1, "color": "yellow", "num": 0 }, "type": "card" }
+  ]
+  ,
   "zones": [
     {
       "id": "pool",
@@ -66,14 +67,14 @@
     },
     {
       "id": "discard_pile",
-      "kind": "set",
+      "kind": "stack",
       "scope": "public",
       "of_types": ["card"],
       "visibility": "all"
     },
     {
       "id": "hand",
-      "kind": "set",
+      "kind": "list",
       "scope": "per_seat",
       "of_types": ["card"],
       "visibility": "owner"
@@ -88,10 +89,65 @@
   ],
   "setup": [
     { "op": "spawn", "entity_type": "card", "to_zone": "desk", "owner": "_" },
-    { "op": "shuffle", "entity_type": "card", "zone": "desk", "owner": "_" }
+    { "op": "shuffle", "entity_type": "card", "zone": "desk", "owner": "_" },
+    { "op": "deal", "from_zone": "desk", "to_zone": "hand", "from_owner": "_", "to_owner": "seat", "count": 5 }
   ],
   "phases": [],
-  "actions": [],
+  "actions": [
+    {
+      "id": "play_first",
+      "require": {
+        "op": "==",
+        "args": [
+          { "var": "state.zones.discard_pile.instances._.items.length" },
+          0
+        ]
+      },
+      "effect": [
+        {
+          "op": "move_top",
+          "from_zone": "hand",
+          "to_zone": "discard_pile",
+          "from_owner": "active",
+          "to_owner": "_",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "play_match",
+      "require": {
+        "op": ">",
+        "args": [
+          { "var": "state.zones.discard_pile.instances._.items.length" },
+          0
+        ]
+      },
+      "effect": [
+        {
+          "op": "move_top",
+          "from_zone": "hand",
+          "to_zone": "discard_pile",
+          "from_owner": "active",
+          "to_owner": "_",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "draw_one",
+      "effect": [
+        {
+          "op": "deal",
+          "from_zone": "desk",
+          "to_zone": "hand",
+          "from_owner": "_",
+          "to_owner": "active",
+          "count": 1
+        }
+      ]
+    }
+  ],
   "victory": {
     "order": []
   }

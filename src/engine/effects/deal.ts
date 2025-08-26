@@ -13,9 +13,11 @@ export type DealOp = {
 
 export const exec_deal: EffectExecutor<DealOp> = (op, ctx) => {
   const count = typeof op.count === 'number' ? op.count : 1;
+
   if (!Number.isInteger(count) || count <= 0) {
     throw new Error(`deal.count 非法：${count}`);
   }
+
   let state = ctx.state;
   const seats = ctx.state.seats;
   if (op.from_owner === 'seat' || op.to_owner === 'seat') {
@@ -32,8 +34,10 @@ export const exec_deal: EffectExecutor<DealOp> = (op, ctx) => {
     }
     return state;
   }
+
   const from_owner = resolve_owner(op.from_owner, ctx);
   const to_owner = resolve_owner(op.to_owner, ctx);
+  console.log(`op: ${op}`);
   return apply_move_top(state, {
     from_zone: op.from_zone,
     to_zone: op.to_zone,

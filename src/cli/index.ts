@@ -4,6 +4,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join, resolve, dirname } from "node:path";
 import { compile } from "../compiler";
 import { initial_state } from "../engine";
+import { legal_actions_compiled } from "../engine/legal_actions_compiled";
 
 // pnpm run cli:dev ./samples/uno
 
@@ -107,9 +108,31 @@ program
         // overrides ?
       });
       const init_text = JSON.stringify(init, null, spaces);
+      console.log('Init state Compile =========>');
 
       const init_wtf = create_folder_writer(baseDir, spaces);
       await init_wtf(init_text, 'init.out.json');
+
+
+      /***
+       * 步骤: -- step
+       * *****
+       */
+      const active_seat = init.game_state.active_seat;
+      console.log(`当前 seat: ${active_seat}`);
+      if (!active_seat) {
+        console.error(`active_seat is null !`);
+        return;
+      }
+
+      const calls = legal_actions_compiled({
+        compiled_spec: compiled.compiled_spec,
+        game_state: init.game_state,
+        by: active_seat,
+        seats: init.game_state.seats,
+      });
+
+      console.log(`calls: ${calls.map(c => c.action)}`);
 
     } catch (err: any) {
       if (err?.code === "ENOENT") {

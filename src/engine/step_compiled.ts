@@ -72,9 +72,9 @@ export function step_compiled(args: {
   const validator = getInputValidator(def);
   const parsed = validator.safeParse(action.payload);
   if (!parsed.success) {
-    throw { code: 'BAD_PAYLOAD', issues: parsed.error.issues };
+    throw { code: 'BAD_PAYLOAD', issues: (parsed.error as any).issues };
   }
-  const call: CompiledActionCall = { ...action, payload: parsed.data };
+  const call: CompiledActionCall = { ...action, payload: parsed.data as Record<string, unknown> | undefined };
 
   // 逐条执行（纯函数，不就地修改）
   let state = game_state;

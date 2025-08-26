@@ -84,7 +84,8 @@ export function normalize_initializer_plan(
         }
 
         assert_zone_exists(zones_index, to_zone, `${base_path}/to_zone`, add_issue);
-
+        const count = node.count == null ? 1 : Number(node.count);
+        
         // 如果设置了 entity 优先通过 entity id 来获取实体
         if (entity) {
           // 此时 count 默认为 1
@@ -106,7 +107,15 @@ export function normalize_initializer_plan(
             break;
           }
           for (let index = 0; index < type_entities.length; index++) {
-            out.push({ op: 'spawn', entity: (type_entities[index] as any).id, to_zone, owner, count: 1, props: node.props});
+            const e = type_entities[index] as any;
+            out.push({ 
+              op: 'spawn', 
+              entity: e.id, 
+              to_zone, 
+              owner, 
+              count: e.props.count || 1, 
+              props: e.props
+            });
           }
         }
 

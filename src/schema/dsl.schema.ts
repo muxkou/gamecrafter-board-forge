@@ -129,18 +129,63 @@ const DSL_Phases = z.array(
 
 
 /**
+ * 表达式 AST（用于 require/when）：
+ * - 常量：{ const: any }
+ * - 变量：{ var: string }，可指向 state / payload 等（见 eval_expr）
+ * - 操作：{ op: string, args?: Expr[] }
+ * 同时容忍原生标量与数组，保持向后兼容。
+ */
+const DSL_Expr: z.ZodTypeAny = z.lazy(() =>
+  z.union([
+    z.object({ const: z.any() }).strict(),
+    z.object({ var: z.string() }).strict(),
+    z.object({ op: z.string(), args: z.array(DSL_Expr).optional() }).strict(),
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.array(DSL_Expr),
+  ])
+);
+
+/**
+ * 最小 JSON Schema（仅覆盖运行期转换所需的关键字段）：
+ * - type: object/string/number/integer/boolean/array
+ * - properties/required/additionalProperties（当 type=object）
+ * - items（当 type=array）
+ * 允许透传其他字段（passthrough），由上层编译进一步校验/忽略。
+ */
+const DSL_Input_JSONSchema = z
+  .object({
+    type: z.enum(['object', 'string', 'number', 'integer', 'boolean', 'array']).optional(),
+    properties: z.record(z.string(), z.any()).optional(),
+    required: z.array(z.string()).optional(),
+    additionalProperties: z.boolean().optional(),
+    items: z.any().optional(),
+  })
+  .passthrough();
+
+/**
+ * effect 节点的基础形状：
+ * - 必须包含 op 字段；具体参数在编译阶段做语义校验（normalize_effect_pipeline）。
+ * 如需在 DSL 层面强约束 op 枚举，可将 op 改为 z.enum([...])；此处保持可扩展性。
+ */
+const DSL_EffectNode = z.object({ op: z.string() }).passthrough();
+
+/**
  * 动作定义：
  * - id：动作 ID
  * - input：输入规格/提示（参数 schema），现阶段为 any
  * - require：前置条件表达式（any，编译为 AST/IR）
  * - effect：效果管线（any，编译为规范化的原子 op 序列）
  */
-const DSL_Action = z.object({
-  id: z.string(),
-  input: z.any().optional(),
-  require: z.any().optional(),
-  effect: z.any().optional(),
-});
+const DSL_Action = z
+  .object({
+    id: z.string().min(1, 'action id 不能为空'),
+    input: DSL_Input_JSONSchema.optional(),
+    require: DSL_Expr.optional(),
+    effect: z.array(DSL_EffectNode).optional(),
+  })
+  .strict();
 
 
 /**

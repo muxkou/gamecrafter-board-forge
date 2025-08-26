@@ -41,7 +41,9 @@ export const exec_spawn: EffectExecutor<SpawnOp> = (op, ctx) => {
 
     const entities = { ...state.entities } as any;
     const board_kinds = ['grid', 'hexgrid', 'track'];
+
     if (board_kinds.includes(zone.kind)) {
+      // 棋盘
       if (count !== 1) throw new Error('board spawn supports count=1');
       if (!op.pos || !Number.isInteger(op.pos.x) || !Number.isInteger(op.pos.y)) {
         throw new Error('spawn.pos required for board zones');
@@ -60,25 +62,30 @@ export const exec_spawn: EffectExecutor<SpawnOp> = (op, ctx) => {
         eid,
       });
     } else {
+      // 非棋盘
       const instList = inst.items;
+
       if (!Array.isArray(instList)) {
         throw new Error(`owner '${owner}' not found in zone '${op.to_zone}'`);
       }
+
       const cap: number | undefined = zone.capacity;
       if (typeof cap === 'number' && instList.length + count > cap) {
         throw new Error(`would exceed capacity ${cap}`);
       }
+
       const items = [...instList];
       for (let i = 0; i < count; i++) {
         const eid = `e${++eid_counter}`;
         entities[eid] = { entity_type: op.entity, props: { ...(op.props || {}) } };
         items.push(eid);
       }
-      const nextZone = { ...zone, instances: { ...zone.instances, [owner]: { ...inst, items } } };
+      const next_zone = { ...zone, instances: { ...zone.instances, [owner]: { ...inst, items } } };
+
       state = {
         ...state,
         entities,
-        zones: { ...state.zones, [op.to_zone]: nextZone },
+        zones: { ...state.zones, [op.to_zone]: next_zone },
         meta: { ...state.meta, next_eid: eid_counter },
       } as any;
     }
