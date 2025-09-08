@@ -134,6 +134,7 @@ program
       console.group('回合 ******');
       console.log(`当前 seat: ${active_seat}`);
       console.log(`可执行 action: ${calls.map(c => c.action)}`);
+
       console.groupEnd()
 
     } catch (err: any) {

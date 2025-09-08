@@ -134,7 +134,7 @@ export function eval_expr(ast: ExprAST, ctx: InterpreterCtx): any {
   
   // 处理对象节点
   if (typeof ast === 'object') {
-    const node = ast as any;
+    const node = ast;
     
     // 常量节点：直接返回值
     if ('const' in node) return node.const;

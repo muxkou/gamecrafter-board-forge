@@ -18,7 +18,7 @@ type CompiledActionDef = {
 
 const EXECUTORS: Record<EffectOp['op'], (op: any, ctx: InterpreterCtx) => GameState> = effect_executors;
 
-function jsonSchemaToZod(schema: any): z.ZodTypeAny {
+function json_schema_to_zod(schema: any): z.ZodTypeAny {
   if (!schema || Object.keys(schema).length === 0) return z.any();
   switch (schema.type) {
     case 'object': {
@@ -26,7 +26,7 @@ function jsonSchemaToZod(schema: any): z.ZodTypeAny {
       const required: string[] = schema.required || [];
       const shape: Record<string, z.ZodTypeAny> = {};
       for (const key of Object.keys(props)) {
-        const child = jsonSchemaToZod(props[key]);
+        const child = json_schema_to_zod(props[key]);
         shape[key] = required.includes(key) ? child : child.optional();
       }
       let obj = z.object(shape);
@@ -41,14 +41,14 @@ function jsonSchemaToZod(schema: any): z.ZodTypeAny {
     case 'boolean':
       return z.boolean();
     case 'array':
-      return z.array(jsonSchemaToZod(schema.items || {}));
+      return z.array(json_schema_to_zod(schema.items || {}));
     default:
       return z.any();
   }
 }
 
-function getInputValidator(def: CompiledActionDef): z.ZodTypeAny {
-  return (def as any).__inputValidator ?? ((def as any).__inputValidator = jsonSchemaToZod(def.input_spec));
+function get_input_validator(def: CompiledActionDef): z.ZodTypeAny {
+  return (def as any).__inputValidator ?? ((def as any).__inputValidator = json_schema_to_zod(def.input_spec));
 }
 
 export function step_compiled(args: {
@@ -69,7 +69,7 @@ export function step_compiled(args: {
     throw new Error(`动作 ${action.action} 的 effect_pipeline 非数组`);
   }
 
-  const validator = getInputValidator(def);
+  const validator = get_input_validator(def);
   const parsed = validator.safeParse(action.payload);
   if (!parsed.success) {
     throw { code: 'BAD_PAYLOAD', issues: (parsed.error as any).issues };
